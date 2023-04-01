@@ -5,8 +5,8 @@ import numpy as np
 
 # CONSTANTS
 
-CONSOLE_WIDTH = 600
-CONSOLE_HEIGHT = 400
+CONSOLE_WIDTH = 800
+CONSOLE_HEIGHT = 500
 CONSOLE_MIN = min(CONSOLE_WIDTH, CONSOLE_HEIGHT)
 CONSOLE_COLOR =  (255,151,152) #(169,193,255)
 
@@ -108,10 +108,10 @@ class Ball:
         if self.isHead: self.tail.updatePos(beat_offset, ms_per_beat)
 
 
-    def draw(self, console): 
-        if self.isHead: self.tail.draw(console)
+    def draw(self, screen): 
+        if self.isHead: self.tail.draw(screen)
 
-        console.blit(self.surf, self.pos - pygame.math.Vector2(BALL_RADIUS, BALL_RADIUS))
+        screen.blit(self.surf, self.pos - pygame.math.Vector2(BALL_RADIUS, BALL_RADIUS))
         
 
 
@@ -280,7 +280,7 @@ class main:
 
     console = pygame.display.set_mode((CONSOLE_WIDTH, CONSOLE_HEIGHT))
 
-    #screen = pygame.Surface
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     
 
 
@@ -339,9 +339,8 @@ class main:
 
 
         console.fill(CONSOLE_COLOR)
+        screen.fill(SCREEN_COLOR)
 
-        #pygame.draw.circle(console, ROOT_COLOR, CONSOLE_CENTER, math.sqrt(2)*POLY1_RADIUS, width = 3)
-        #pygame.draw.circle(console, ROOT_COLOR, CONSOLE_CENTER, POLY1_RADIUS, width = 3)
         
 
         for overtone in overtones:
@@ -353,11 +352,12 @@ class main:
 
                 overtone.poly.ball.updatePos(beat_offset, ms_per_beat)   #updates ball position (ball also updates the position of its tail)
 
-                overtone.poly.ball.draw(console)                          #draws ball (ball also tells its tail to draw itself)
+                overtone.poly.ball.draw(screen)                          #draws ball (ball also tells its tail to draw itself)
 
 
             overtone.radio.draw(console)
         
+        console.blit(screen, (0,0))
 
         slider.draw(console)
 
