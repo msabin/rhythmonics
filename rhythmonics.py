@@ -5,10 +5,10 @@ import numpy as np
 
 # CONSTANTS
 
-CONSOLE_WIDTH = 800
+CONSOLE_WIDTH = 900
 CONSOLE_HEIGHT = 500
 CONSOLE_MIN = min(CONSOLE_WIDTH, CONSOLE_HEIGHT)
-CONSOLE_COLOR =  (255,151,152) #(169,193,255)
+CONSOLE_COLOR =  (0xff,0xb3,0xc6) #(169,193,255)
 CONSOLE_CENTER = pygame.Vector2(CONSOLE_WIDTH/2, CONSOLE_HEIGHT/2)
 
 
@@ -18,7 +18,7 @@ SCREEN_MIN = min(SCREEN_WIDTH, SCREEN_HEIGHT)
 SCREEN_COLOR = (112, 198, 169)
 SCREEN_CENTER = pygame.Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
 
-SCREEN_ORIGIN = CONSOLE_CENTER - SCREEN_CENTER
+SCREEN_ORIGIN = CONSOLE_CENTER - SCREEN_CENTER - (0,20)
 
 
 NUM_OVERTONES = 7
@@ -27,6 +27,8 @@ ROOT_COLOR = (237,199,176)
 THIRD_COLOR = (118,150,222)
 FIFTH_COLOR = (255,151,152)
 SEVENTH_COLOR = (139,72,82)
+
+TEAL = (0,0x9c,0xaa)
 
 ROOT_RADIUS = (.9*SCREEN_MIN)/2
 BALL_RADIUS = 7
@@ -167,7 +169,7 @@ class Slider:
         self.pos = pygame.Vector2(125, self.maxy-.25*(self.maxy-self.miny))
 
 
-        self.color = (255,255,255)
+        self.color = TEAL
 
 
         self.fontSize = 20
@@ -369,6 +371,7 @@ class main:
 
             overtone.radio.draw(console)
         
+        pygame.draw.rect(console, TEAL, (SCREEN_ORIGIN - (50,15), (SCREEN_WIDTH+100,SCREEN_HEIGHT+60)), border_radius=5, border_bottom_right_radius=40)
         console.blit(screen, SCREEN_ORIGIN)
 
         slider.draw(console)
