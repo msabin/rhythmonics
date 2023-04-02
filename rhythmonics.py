@@ -9,15 +9,17 @@ CONSOLE_WIDTH = 800
 CONSOLE_HEIGHT = 500
 CONSOLE_MIN = min(CONSOLE_WIDTH, CONSOLE_HEIGHT)
 CONSOLE_COLOR =  (255,151,152) #(169,193,255)
-
-
-
-SCREEN_WIDTH = 400
-SCREEN_HEIGHT = SCREEN_WIDTH
-SCREEN_COLOR = (112, 198, 169)
-
-
 CONSOLE_CENTER = pygame.Vector2(CONSOLE_WIDTH/2, CONSOLE_HEIGHT/2)
+
+
+SCREEN_WIDTH = 425
+SCREEN_HEIGHT = 350
+SCREEN_MIN = min(SCREEN_WIDTH, SCREEN_HEIGHT)
+SCREEN_COLOR = (112, 198, 169)
+SCREEN_CENTER = pygame.Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+
+SCREEN_ORIGIN = CONSOLE_CENTER - SCREEN_CENTER
+
 
 NUM_OVERTONES = 7
 
@@ -26,7 +28,7 @@ THIRD_COLOR = (118,150,222)
 FIFTH_COLOR = (255,151,152)
 SEVENTH_COLOR = (139,72,82)
 
-POLY1_RADIUS = ((3/5)*CONSOLE_MIN)/2
+ROOT_RADIUS = (.9*SCREEN_MIN)/2
 BALL_RADIUS = 7
 FADE_TIME = .1  #Fade time in ms
 
@@ -158,30 +160,46 @@ class Tail:
 
 class Slider:
     def __init__(self):
-        self.miny = 40
+        self.miny = 75
         self.maxy = CONSOLE_HEIGHT-self.miny
 
 
-        self.pos = pygame.Vector2(self.miny, self.maxy-.25*(self.maxy-self.miny))
+        self.pos = pygame.Vector2(125, self.maxy-.25*(self.maxy-self.miny))
 
 
         self.color = (255,255,255)
 
+
+        self.fontSize = 20
+        font = pygame.font.Font(None, self.fontSize)
+
+        self.labels = [font.render('FREEZE', False, (0,0,0)), font.render('GROOVE', False, (0,0,0)), font.render('CHAOS', False, (0,0,0)),
+                       font.render('HARMONY', False, (0,0,0)), font.render('EEEEEE', False, (0,0,0))]
+
+
+                
+
     def draw(self, surface):
+        pygame.draw.line(surface, (0,0,0), (self.pos[0], self.miny), (self.pos[0], self.maxy))
         pygame.draw.circle(surface, self.color, self.pos, 10)
+
+        for i, label in enumerate(self.labels):
+            surface.blit(label, (25, (self.maxy - self.fontSize/2) - (i/4)*(self.maxy - self.miny))) 
 
 
 class RadioBtn:
     def __init__(self, num, color):
-        miny = 50
+        miny = 75
         maxy = CONSOLE_HEIGHT-miny
 
-        self.pos = pygame.Vector2(CONSOLE_WIDTH - miny, miny + (num-1)*(maxy-miny)/6)
+        self.pos = pygame.Vector2(CONSOLE_WIDTH - 140, miny + (num-1)*(maxy-miny)/6)
 
 
         self.color = color
 
     def draw(self, surface):
+        pygame.draw.circle(surface, (230,230,230), self.pos, 7, 2)
+
         pygame.draw.circle(surface, self.color, self.pos, 5)
 
 
@@ -281,23 +299,17 @@ class main:
     console = pygame.display.set_mode((CONSOLE_WIDTH, CONSOLE_HEIGHT))
 
     screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-    
 
 
 
 
-
-
-
-
-
-    root1 = Polygon(1,math.sqrt(2)*POLY1_RADIUS, CONSOLE_CENTER, ROOT_COLOR, isPointy=False)
-    root2 = Polygon(2,POLY1_RADIUS, CONSOLE_CENTER, ROOT_COLOR, isPointy=False)
-    fifth1 = Polygon(3, POLY1_RADIUS, CONSOLE_CENTER, FIFTH_COLOR)
-    root3 = Polygon(4,math.sqrt(2)*POLY1_RADIUS, CONSOLE_CENTER, ROOT_COLOR)
-    third1 = Polygon(5,fifth1.inCirc, CONSOLE_CENTER, THIRD_COLOR)
-    fifth2 = Polygon(6,POLY1_RADIUS, CONSOLE_CENTER, FIFTH_COLOR)
-    seventh1 = Polygon(7,third1.inCirc, CONSOLE_CENTER, SEVENTH_COLOR)
+    root1 = Polygon(1,ROOT_RADIUS, SCREEN_CENTER, ROOT_COLOR, isPointy=False)
+    root2 = Polygon(2,ROOT_RADIUS/math.sqrt(2), SCREEN_CENTER, ROOT_COLOR, isPointy=False)
+    fifth1 = Polygon(3, ROOT_RADIUS/math.sqrt(2), SCREEN_CENTER, FIFTH_COLOR)
+    root3 = Polygon(4,ROOT_RADIUS, SCREEN_CENTER, ROOT_COLOR)
+    third1 = Polygon(5,fifth1.inCirc, SCREEN_CENTER, THIRD_COLOR)
+    fifth2 = Polygon(6,ROOT_RADIUS/math.sqrt(2), SCREEN_CENTER, FIFTH_COLOR)
+    seventh1 = Polygon(7,third1.inCirc, SCREEN_CENTER, SEVENTH_COLOR)
 
     polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1]
 
@@ -344,7 +356,7 @@ class main:
         
 
         for overtone in overtones:
-            overtone.poly.draw(console)
+            overtone.poly.draw(screen)
 
             
             if overtone.active == True:
@@ -357,7 +369,7 @@ class main:
 
             overtone.radio.draw(console)
         
-        console.blit(screen, (0,0))
+        console.blit(screen, SCREEN_ORIGIN)
 
         slider.draw(console)
 
