@@ -30,6 +30,10 @@ SEVENTH_COLOR = (139,72,82)
 
 TEAL = (0,0x9c,0xaa)
 
+DIGITAL_BG = (0,0x35,0x55)
+DIGITAL_OFF = (0,0x69,0x77)
+DIGITAL_ON = (0,0xcf,0xdd)
+
 ROOT_RADIUS = (.9*SCREEN_MIN)/2
 BALL_RADIUS = 7
 FADE_TIME = .1  #Fade time in ms
@@ -172,11 +176,21 @@ class Slider:
         self.color = TEAL
 
 
-        self.fontSize = 20
-        font = pygame.font.Font(None, self.fontSize)
+        self.digitalFontSize = 30
+        digitalFont = pygame.font.Font('digital-7 (mono).ttf', self.digitalFontSize)
 
-        self.labels = [font.render('FREEZE', False, (0,0,0)), font.render('GROOVE', False, (0,0,0)), font.render('CHAOS', False, (0,0,0)),
-                       font.render('HARMONY', False, (0,0,0)), font.render('EEEEEE', False, (0,0,0))]
+        self.BPM_Box = digitalFont.render(' 8888.88 ', False, DIGITAL_OFF, DIGITAL_BG)
+        self.BPM = digitalFont.render(' 00 12.83 ', False, DIGITAL_ON)
+
+        self.Hz_Box = digitalFont.render(' 8888.88 ', False, DIGITAL_OFF, DIGITAL_BG)
+        self.Hz = digitalFont.render(' 0 120.00 ', False, DIGITAL_ON)
+
+
+        self.labelsFontSize = 20
+        labelsFont = pygame.font.Font(None, self.labelsFontSize)
+
+        self.labels = [labelsFont.render('FREEZE', False, (0,0,0)), labelsFont.render('GROOVE', False, (0,0,0)), labelsFont.render('CHAOS', False, (0,0,0)),
+                       labelsFont.render('HARMONY', False, (0,0,0)), labelsFont.render('EEEEEE', False, (0,0,0))]
 
 
                 
@@ -185,8 +199,16 @@ class Slider:
         pygame.draw.line(surface, (0,0,0), (self.pos[0], self.miny), (self.pos[0], self.maxy))
         pygame.draw.circle(surface, self.color, self.pos, 10)
 
+        surface.blit(self.Hz_Box, (25, self.miny-50))
+        surface.blit(self.Hz, (25, self.miny-50))
+
         for i, label in enumerate(self.labels):
-            surface.blit(label, (25, (self.maxy - self.fontSize/2) - (i/4)*(self.maxy - self.miny))) 
+            surface.blit(label, (25, (self.maxy - self.labelsFontSize/2) - (i/4)*(self.maxy - self.miny))) 
+
+        surface.blit(self.BPM_Box, (25, self.maxy+20))
+        surface.blit(self.BPM, (25, self.maxy+20))
+
+        
 
 
 class RadioBtn:
@@ -327,7 +349,8 @@ class main:
 
 
 
-
+    fonts = pygame.font.get_fonts()
+    print(fonts)
     
     
 
