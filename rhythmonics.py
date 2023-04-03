@@ -31,7 +31,7 @@ SEVENTH_COLOR = (139,72,82)
 TEAL = (0,0x9c,0xaa)
 
 DIGITAL_BG = (0,0x35,0x55)
-DIGITAL_OFF = (0,0x69,0x77)
+DIGITAL_OFF = (0,0x62,0x70)
 DIGITAL_ON = (0,0xcf,0xdd)
 
 ROOT_RADIUS = (.9*SCREEN_MIN)/2
@@ -179,11 +179,11 @@ class Slider:
         self.digitalFontSize = 30
         digitalFont = pygame.font.Font('digital-7 (mono).ttf', self.digitalFontSize)
 
-        self.BPM_Box = digitalFont.render(' 8888.88 ', False, DIGITAL_OFF, DIGITAL_BG)
-        self.BPM = digitalFont.render(' 00 12.83 ', False, DIGITAL_ON)
-
         self.Hz_Box = digitalFont.render(' 8888.88 ', False, DIGITAL_OFF, DIGITAL_BG)
-        self.Hz = digitalFont.render(' 0 120.00 ', False, DIGITAL_ON)
+        self.Hz = digitalFont.render(' 0060.00 ', False, DIGITAL_ON)
+
+        self.BPM_Box = digitalFont.render(' 888888 ', False, DIGITAL_OFF, DIGITAL_BG)
+        self.BPM = digitalFont.render(' 003600 ', False, DIGITAL_ON)
 
 
         self.labelsFontSize = 20
@@ -347,10 +347,6 @@ class main:
     
     slider = Slider()
 
-
-
-    fonts = pygame.font.get_fonts()
-    print(fonts)
     
     
 
