@@ -8,7 +8,7 @@ import numpy as np
 CONSOLE_WIDTH = 900
 CONSOLE_HEIGHT = 500
 CONSOLE_MIN = min(CONSOLE_WIDTH, CONSOLE_HEIGHT)
-CONSOLE_COLOR =  (0xff,0xb3,0xc6) #(169,193,255)
+CONSOLE_COLOR =  (0xff,0xbc,0xcf) #(169,193,255)
 CONSOLE_CENTER = pygame.Vector2(CONSOLE_WIDTH/2, CONSOLE_HEIGHT/2)
 
 
@@ -28,7 +28,7 @@ THIRD_COLOR = (118,150,222)
 FIFTH_COLOR = (255,151,152)
 SEVENTH_COLOR = (139,72,82)
 
-TEAL = (0,0x9c,0xaa)
+TEAL = (0,0x97,0x94)
 
 DIGITAL_BG = (0,0x35,0x55)
 DIGITAL_OFF = (0,0x62,0x70)
@@ -179,11 +179,18 @@ class Slider:
         self.digitalFontSize = 30
         digitalFont = pygame.font.Font('digital-7 (mono).ttf', self.digitalFontSize)
 
+        hz = 1
+        hzStr = " " + f'{hz:07.2f}'.replace("1", " 1") + " "
+
         self.Hz_Box = digitalFont.render(' 8888.88 ', False, DIGITAL_OFF, DIGITAL_BG)
-        self.Hz = digitalFont.render(' 0060.00 ', False, DIGITAL_ON)
+        self.Hz = digitalFont.render(hzStr, False, DIGITAL_ON)
+
+
+        bpm = 60
+        bpmStr = " " + f'{bpm:06}'.replace("1", " 1") + " "
 
         self.BPM_Box = digitalFont.render(' 888888 ', False, DIGITAL_OFF, DIGITAL_BG)
-        self.BPM = digitalFont.render(' 003600 ', False, DIGITAL_ON)
+        self.BPM = digitalFont.render(bpmStr, False, DIGITAL_ON)
 
 
         self.labelsFontSize = 20
