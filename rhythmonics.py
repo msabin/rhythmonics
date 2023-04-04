@@ -31,8 +31,10 @@ SEVENTH_COLOR = (139,72,82)
 TEAL = (0,0x97,0x94)
 
 DIGITAL_BG = (0,0x35,0x55)
-DIGITAL_OFF = (0,0x62,0x70)
+DIGITAL_OFF = (0,0x52,0x60)
 DIGITAL_ON = (0,0xcf,0xdd)
+
+LABELS_COL = (0,0,0) #(76,100,161)
 
 ROOT_RADIUS = (.9*SCREEN_MIN)/2
 BALL_RADIUS = 7
@@ -94,7 +96,7 @@ class Ball:
         
 
     def updatePos(self, beat_offset, ms_per_beat): #subDiv in [0,1]
-        if ms_per_beat == 0: return
+        #if ms_per_beat == 0: return    #ARE THERE BEST PRACTICES FOR WHERE TO CHECK FOR DIV BY 0? TOOK THIS OUT BECAUSE DONE WHEN CALLED IN EVENT LOOP
 
         subDiv = beat_offset/ms_per_beat
         
@@ -165,55 +167,116 @@ class Tail:
 
 
 class Slider:
-    def __init__(self):
+    def __init__(self, overtones):
+        self.overtones = overtones
+
         self.miny = 75
         self.maxy = CONSOLE_HEIGHT-self.miny
 
 
-        self.pos = pygame.Vector2(125, self.maxy-.25*(self.maxy-self.miny))
+        self.sliderPos = pygame.Vector2(125, self.maxy-.25*(self.maxy-self.miny))
 
 
         self.color = TEAL
 
 
+
+
+        self.labelsFontSize = 18
+        #path = pygame.font.match_font('Abadi MT Condensed Extra Bold')
+        labelsFont = pygame.font.Font('Menlo.ttc', self.labelsFontSize)
+
+        self.labels = [labelsFont.render('FREEZE', True, LABELS_COL), labelsFont.render('GROOVE', True, LABELS_COL), labelsFont.render('CHAOS', True, LABELS_COL),
+                       labelsFont.render('HARMONY', True, LABELS_COL), labelsFont.render('EEEEEE', True, LABELS_COL)]
+        
+        
+
         self.digitalFontSize = 30
-        digitalFont = pygame.font.Font('digital-7 (mono).ttf', self.digitalFontSize)
-
-        hz = 1
-        hzStr = " " + f'{hz:07.2f}'.replace("1", " 1") + " "
-
-        self.Hz_Box = digitalFont.render(' 8888.88 ', False, DIGITAL_OFF, DIGITAL_BG)
-        self.Hz = digitalFont.render(hzStr, False, DIGITAL_ON)
+        self.digitalFont = pygame.font.Font('digital-7 (mono).ttf', self.digitalFontSize)
 
 
-        bpm = 60
-        bpmStr = " " + f'{bpm:06}'.replace("1", " 1") + " "
+        self.HzBox = self.digitalFont.render(' 8888.88 ', False, DIGITAL_OFF, DIGITAL_BG)  #digital box to print Hz on
+        hzStr = " " + f'{START_HZ:07.2f}'.replace("1", " 1") + " "                         #formatted string to print START_HZ on HzBox
+        self.HzDisp = self.digitalFont.render(hzStr, False, DIGITAL_ON)
+        self.HzLabel = labelsFont.render('Hz', True, LABELS_COL)
 
-        self.BPM_Box = digitalFont.render(' 888888 ', False, DIGITAL_OFF, DIGITAL_BG)
-        self.BPM = digitalFont.render(bpmStr, False, DIGITAL_ON)
-
-
-        self.labelsFontSize = 20
-        labelsFont = pygame.font.Font(None, self.labelsFontSize)
-
-        self.labels = [labelsFont.render('FREEZE', False, (0,0,0)), labelsFont.render('GROOVE', False, (0,0,0)), labelsFont.render('CHAOS', False, (0,0,0)),
-                       labelsFont.render('HARMONY', False, (0,0,0)), labelsFont.render('EEEEEE', False, (0,0,0))]
+        self.BPM_Box = self.digitalFont.render(' 888888 ', False, DIGITAL_OFF, DIGITAL_BG)
+        bpmStr = " " + f'{START_HZ*60:06}'.replace("1", " 1") + " "
+        self.BPM_Disp = self.digitalFont.render(bpmStr, False, DIGITAL_ON)
+        self.BPM_Label = labelsFont.render('BPM', True, LABELS_COL)
 
 
                 
 
     def draw(self, surface):
-        pygame.draw.line(surface, (0,0,0), (self.pos[0], self.miny), (self.pos[0], self.maxy))
-        pygame.draw.circle(surface, self.color, self.pos, 10)
+        pygame.draw.line(surface, (150,150,150), (self.sliderPos[0], self.miny), (self.sliderPos[0], self.maxy), width=2) #slider track visualized
+        pygame.draw.circle(surface, self.color, self.sliderPos, 10)   #slider handle
 
-        surface.blit(self.Hz_Box, (25, self.miny-50))
-        surface.blit(self.Hz, (25, self.miny-50))
+        surface.blit(self.HzBox, (25, self.miny-50))
+        surface.blit(self.HzDisp, (25, self.miny-50))
+        surface.blit(self.HzLabel, (25+self.HzBox.get_width()+10,self.miny-45))
 
         for i, label in enumerate(self.labels):
             surface.blit(label, (25, (self.maxy - self.labelsFontSize/2) - (i/4)*(self.maxy - self.miny))) 
 
         surface.blit(self.BPM_Box, (25, self.maxy+20))
-        surface.blit(self.BPM, (25, self.maxy+20))
+        surface.blit(self.BPM_Disp, (25, self.maxy+20))
+        surface.blit(self.BPM_Label, (25+self.BPM_Box.get_width()+10,self.maxy+25))
+
+
+
+    def updateVolt(self, sliderSelected, beat_offset, clock):  #slider's position/"voltage" affects VCOs' Hz. Use clock to find phase
+
+        HzScale = abs(self.sliderPos[1] - self.maxy)/(self.maxy - self.miny)
+
+        if HzScale <= .25:
+            Hz = HzScale/.25                                                    #Up to quarter of the way, linear scales up to 1Hz=60bpm
+            if Hz <= .02: Hz = 0                                            #if it's too slow, just set it to 0
+        elif HzScale <= .5:
+            Hz = (1-(HzScale -.25)/.25) +   275/60 * (HzScale-.25)/.25     #linear scales up to 275/60Hz = 275bpm
+        elif HzScale <= .75:
+            Hz = 275/60 + (110-275/60)*math.log(1 + (HzScale - .5)/.25, 2)  #log scales up to 110Hz (4th harmonic/2nd octave will be 440Hz)    
+        else:   
+            Hz = 110 + (2000-110)*math.log(1 + (HzScale - .75)/.25, 2)        #caps at 2000 Hz (seventh harmonic will be at 14000Hz)
+
+
+        hzStr = " " + f'{Hz:07.2f}'.replace("1", " 1") + " "
+        self.HzDisp = self.digitalFont.render(hzStr, False, DIGITAL_ON)
+
+        bpmStr = " " + f'{Hz*60:06.0f}'.replace("1", " 1") + " "
+        self.BPM_Disp = self.digitalFont.render(bpmStr, False, DIGITAL_ON)
+
+
+
+        ms_per_beat = 1000/self.overtones[0].Hz #Keep ms_per_beat based on fundamental freq unless slider is not selected and we update fundamental Hz
+
+        if True:#not sliderSelected:  #if slider isn't selected we *now* update the VCOs
+        
+            if Hz == 0: 
+                ms_per_beat = 0
+                for overtone in self.overtones: overtone.oscillator.stop() #kill all oscillators
+
+            else: 
+                ms_per_beat = 1000/Hz 
+
+                buffer_time = (1/Hz)*26            #start updated soundwaves in the future by buffer_time and then wait to play them (sync with graphics)
+
+                beat_offset = updateBeatOffset(clock, beat_offset, ms_per_beat)
+
+                for overtone in self.overtones: overtone.updateHz(Hz, subDiv = (beat_offset+buffer_time)/ms_per_beat)
+
+                for overtone in self.overtones: overtone.oscillator.set_volume(0)
+
+                pygame.time.delay(int(max(buffer_time - clock.tick(), 0)))    #wait to play sounds until caught up to extra buffer time
+
+                for overtone in self.overtones: overtone.oscillator.play(loops=-1) #play them all at the same time
+
+                
+                
+
+
+        return (beat_offset, ms_per_beat)
+
 
         
 
@@ -234,7 +297,7 @@ class RadioBtn:
         pygame.draw.circle(surface, self.color, self.pos, 5)
 
 
-def Oscillator(Hz, phase=0, sampRate=44100):
+def Oscillator(Hz, phase=0, sampRate=44100): #phase in relative terms: in [0,1] and represents fraction of period of Hz to offset
         
         dtype = "int8"
         maxVal = np.iinfo(dtype).max
@@ -243,16 +306,13 @@ def Oscillator(Hz, phase=0, sampRate=44100):
         periodLength = int(secs*sampRate)
         pulseWidth = min(50, (1/3)*periodLength)
 
-        startPulse = ((1-phase)%1)*periodLength                           #for phase in [0,1] of one cycle, start pulse at 1 - phase fraction of periodLength
+        startPulse = ((1-phase)%1)*periodLength           #for phase in [0,1] of one cycle, start pulse at 1-phase fraction of periodLength (neg vals work via mod 1)
         endPulse = startPulse + pulseWidth                #end pulse after its width, with possilbe wrap-around
         endWrap = min(endPulse, endPulse % periodLength)
         wrap = bool(endWrap < endPulse)
 
         wave = np.array([maxVal/NUM_OVERTONES if (i >= startPulse and i <= endPulse) or (wrap and i <= endWrap) else -maxVal/NUM_OVERTONES for i in range(periodLength)], dtype=dtype)
 
-        #if wrap: print(f'wrapped!    {wave}')
-
-        #wave = np.array([maxVal if math.sin(Hz*2*math.pi*(i/sampRate + phase)) >= 0 else -maxVal for i in range(int(secs*sampRate))], dtype=dtype)
   
         return pygame.sndarray.make_sound(wave)
 
@@ -334,6 +394,7 @@ class main:
 
 
 
+    #Handcraft polygon aesthetics for the screen
     root1 = Polygon(1,ROOT_RADIUS, SCREEN_CENTER, ROOT_COLOR, isPointy=False)
     root2 = Polygon(2,ROOT_RADIUS/math.sqrt(2), SCREEN_CENTER, ROOT_COLOR, isPointy=False)
     fifth1 = Polygon(3, ROOT_RADIUS/math.sqrt(2), SCREEN_CENTER, FIFTH_COLOR)
@@ -346,22 +407,25 @@ class main:
 
 
 
+
+    #Instantiate overtones that correspond to the handcrafted polygons
     Hz = START_HZ
     overtones = [Overtone(START_HZ, len(poly.verts), poly) for poly in polys]
 
-    
+
+    #Slider's "voltage" will control VCOs (oscillators) of the overtones
+    slider = Slider(overtones)
 
     
-    slider = Slider()
+    
 
-    
-    
+
 
     
     user_done = False
     sliderSelected = False
 
-    ms_per_beat = 1000/Hz #how many milliseconds in a beat
+    ms_per_beat = 1000/START_HZ #how many milliseconds in a beat
     beat_offset = 0
 
 
@@ -388,9 +452,10 @@ class main:
 
             
             if overtone.active == True:
-                beat_offset = updateBeatOffset(clock, beat_offset, ms_per_beat)
+                if ms_per_beat != 0: 
+                    beat_offset = updateBeatOffset(clock, beat_offset, ms_per_beat)
 
-                overtone.poly.ball.updatePos(beat_offset, ms_per_beat)   #updates ball position (ball also updates the position of its tail)
+                    overtone.poly.ball.updatePos(beat_offset, ms_per_beat)   #updates ball position (ball also updates the position of its tail)
 
                 overtone.poly.ball.draw(screen)                          #draws ball (ball also tells its tail to draw itself)
 
@@ -407,16 +472,27 @@ class main:
 
 
 
+        #fades volume in over event loops runs so that we don't get gross clicks as the Hz are adjusted with the slider
+        for overtone in overtones:
+            if overtone.active:
+                vol = overtone.oscillator.get_volume()
+                if vol < 1:
+                    vol = min(vol + .05, 1)
+                    overtone.oscillator.set_volume(vol)
+            
+
+
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 user_done = True
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    if math.dist(slider.pos, event.pos) <= 10:
+                    if math.dist(slider.sliderPos, event.pos) <= 10:
                         sliderSelected = True
 
-                        offset_y = slider.pos[1] - event.pos[1]
+                        offset_y = slider.sliderPos[1] - event.pos[1]
 
                     else:
                         for overtone in overtones:
@@ -430,51 +506,18 @@ class main:
                     y = min(event.pos[1], slider.maxy - offset_y)
                     y = max(y, slider.miny - offset_y)
 
-                    slider.pos[1] = offset_y + y
+                    slider.sliderPos[1] = offset_y + y
+
+                    (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
 
 
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if (event.button == 1) and sliderSelected:         #update Hz if the slider was selected and now released
 
-                    sliderSelected = False                    #unselect slider and then update Hz
+                    sliderSelected = False                    #unselect slider and then update slider's affect on Hz
 
-
-                    HzScale = abs(slider.pos[1] - slider.maxy)/(slider.maxy - slider.miny)
-
-                    if HzScale <= .25:
-                        Hz = HzScale/.25                                                    #Up to quarter of the way, linear scales up to 1Hz=60bpm
-                    elif HzScale <= .5:
-                        Hz = (1-(HzScale -.25)/.25) +   275/60 * (HzScale-.25)/.25     #linear scales up to 275/60Hz = 275bpm
-                    elif HzScale <= .75:
-                        Hz = 275/60 + (110-275/60)*math.log(1 + (HzScale - .5)/.25, 2)  #log scales up to 110Hz (4th harmonic/2nd octave will be 440Hz)    
-                    else:   
-                        Hz = 110 + (2000-110)*math.log(1 + (HzScale - .75)/.25, 2)        #caps at 2000 Hz (seventh harmonic will be at 14000Hz)
-
-
-                        
-
-                    
-                    if Hz == 0: 
-                        ms_per_beat = 0
-                        for overtone in overtones: overtone.oscillator.stop() #kill all oscillators
-
-                    else: 
-                        ms_per_beat = 1000/Hz 
-
-                        buffer_time = (1/Hz)*26            #start updated soundwaves in the future by buffer_time and then wait to play them (sync with graphics)
-
-                        beat_offset = updateBeatOffset(clock, beat_offset, ms_per_beat)
-
-                        for overtone in overtones: overtone.updateHz(Hz, subDiv = (beat_offset+buffer_time)/ms_per_beat)
-
-                        pygame.time.delay(int(max(buffer_time - clock.tick(), 0)))    #wait to play sounds until caught up to extra buffer time
-
-                        for overtone in overtones: overtone.oscillator.play(loops=-1)
-
-
-
-
+                    (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
 
 
         #clock.tick()                
