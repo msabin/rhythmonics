@@ -44,6 +44,8 @@ MIN_HZ = 0
 MAX_HZ = 2000
 START_HZ = 1 #1Hz = 60bpm
 
+SMOOTH_SLIDE = False
+
 
 
 class Polygon:
@@ -250,7 +252,7 @@ class Slider:
 
         ms_per_beat = 1000/self.overtones[0].Hz #Keep ms_per_beat based on fundamental freq unless slider is not selected and we update fundamental Hz
 
-        if True:#not sliderSelected:  #if slider isn't selected we *now* update the VCOs
+        if SMOOTH_SLIDE or (not sliderSelected):  #if slider isn't selected we *now* update the VCOs
         
             if Hz == 0: 
                 ms_per_beat = 0
@@ -265,14 +267,13 @@ class Slider:
 
                 for overtone in self.overtones: overtone.updateHz(Hz, subDiv = (beat_offset+buffer_time)/ms_per_beat)
 
-                for overtone in self.overtones: overtone.oscillator.set_volume(0)
+                if SMOOTH_SLIDE: 
+                    for overtone in self.overtones: overtone.oscillator.set_volume(0)
 
                 pygame.time.delay(int(max(buffer_time - clock.tick(), 0)))    #wait to play sounds until caught up to extra buffer time
 
                 for overtone in self.overtones: overtone.oscillator.play(loops=-1) #play them all at the same time
 
-                
-                
 
 
         return (beat_offset, ms_per_beat)
@@ -292,7 +293,7 @@ class RadioBtn:
         self.color = color
 
     def draw(self, surface):
-        pygame.draw.circle(surface, (230,230,230), self.pos, 7, 2)
+        pygame.draw.circle(surface, SCREEN_COLOR, self.pos, 8, 3)
 
         pygame.draw.circle(surface, self.color, self.pos, 5)
 
@@ -471,14 +472,14 @@ class main:
         pygame.display.update()
 
 
-
-        #fades volume in over event loops runs so that we don't get gross clicks as the Hz are adjusted with the slider
-        for overtone in overtones:
-            if overtone.active:
-                vol = overtone.oscillator.get_volume()
-                if vol < 1:
-                    vol = min(vol + .05, 1)
-                    overtone.oscillator.set_volume(vol)
+        if SMOOTH_SLIDE:
+            #fades volume in over event loops runs so that we don't get gross clicks as the Hz are adjusted with the slider
+            for overtone in overtones:
+                if overtone.active:
+                    vol = overtone.oscillator.get_volume()
+                    if vol < 1:
+                        vol = min(vol + .05, 1)
+                        overtone.oscillator.set_volume(vol)
             
 
 
@@ -517,7 +518,7 @@ class main:
 
                     sliderSelected = False                    #unselect slider and then update slider's affect on Hz
 
-                    (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
+                    if not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
 
 
         #clock.tick()                
