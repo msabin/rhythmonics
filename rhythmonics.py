@@ -43,7 +43,7 @@ MIN_HZ = 0
 MAX_HZ = 2000
 START_HZ = 1 #1Hz = 60bpm
 
-SMOOTH_SLIDE = False
+SMOOTH_SLIDE = True
 
 
 
@@ -77,6 +77,7 @@ class Polygon:
         else:
             pygame.draw.circle(surface, self.color, self.center, self.radius, width=3)
     
+
 
 
 class Ball:
@@ -128,8 +129,6 @@ class Ball:
 
 
 
-
-
 class Tail:
     def __init__(self, ball):
         self.head = ball
@@ -172,6 +171,66 @@ class Tail:
 
 
 
+
+
+def Oscillator(Hz, phase=0, sampRate=44100): #phase in relative terms: in [0,1] and represents fraction of period of Hz to offset
+        
+        dtype = "int8"
+        maxVal = np.iinfo(dtype).max
+
+        secs = 1/Hz  #Get exactly enough samples for a full wave cycle
+        periodLength = int(secs*sampRate)
+        pulseWidth = min(50, (1/3)*periodLength)
+
+        startPulse = ((1-phase)%1)*periodLength           #for phase in [0,1] of one cycle, start pulse at 1-phase fraction of periodLength (neg vals work via mod 1)
+        endPulse = startPulse + pulseWidth                #end pulse after its width, with possilbe wrap-around
+        endWrap = min(endPulse, endPulse % periodLength)
+        wrap = bool(endWrap < endPulse)
+
+        wave = np.array([maxVal/NUM_OVERTONES if (i >= startPulse and i <= endPulse) or (wrap and i <= endWrap) else -maxVal/NUM_OVERTONES for i in range(periodLength)], dtype=dtype)
+
+  
+        return pygame.sndarray.make_sound(wave)
+
+
+
+
+class Overtone:
+    def __init__(self, Hz, overtone, poly, phase = 0):       #Hz and phase all with respect to the fundamental tone of the overtones
+        self.Hz = Hz
+        self.phase = phase
+        self.overtone = overtone
+
+        self.oscillator = Oscillator(self.Hz*self.overtone, self.phase*self.overtone)
+        self.oscillator.set_volume(0)
+
+        self.poly = poly
+
+        self.radio = RadioBtn(overtone, poly.color)
+
+        self.active = False
+
+    def updateHz(self, Hz, subDiv):
+        self.Hz = Hz
+
+        self.phase = subDiv
+        self.oscillator.stop()
+
+        self.oscillator = Oscillator(self.Hz*self.overtone, self.phase*self.overtone)
+        if self.active:
+            if not SMOOTH_SLIDE: self.oscillator.set_volume(1)
+        else:
+            self.oscillator.set_volume(0)
+
+    def setActive(self, active):
+        self.active = active
+
+        if active: 
+            if not SMOOTH_SLIDE: self.oscillator.set_volume(1)
+        else:
+            self.oscillator.set_volume(0)
+
+        
 
 
 class Slider:
@@ -285,7 +344,8 @@ class Slider:
         return (beat_offset, ms_per_beat)
 
 
-        
+
+
 
 
 class RadioBtn:
@@ -304,62 +364,7 @@ class RadioBtn:
         pygame.draw.circle(surface, self.color, self.pos, 5)
 
 
-def Oscillator(Hz, phase=0, sampRate=44100): #phase in relative terms: in [0,1] and represents fraction of period of Hz to offset
-        
-        dtype = "int8"
-        maxVal = np.iinfo(dtype).max
 
-        secs = 1/Hz  #Get exactly enough samples for a full wave cycle
-        periodLength = int(secs*sampRate)
-        pulseWidth = min(50, (1/3)*periodLength)
-
-        startPulse = ((1-phase)%1)*periodLength           #for phase in [0,1] of one cycle, start pulse at 1-phase fraction of periodLength (neg vals work via mod 1)
-        endPulse = startPulse + pulseWidth                #end pulse after its width, with possilbe wrap-around
-        endWrap = min(endPulse, endPulse % periodLength)
-        wrap = bool(endWrap < endPulse)
-
-        wave = np.array([maxVal/NUM_OVERTONES if (i >= startPulse and i <= endPulse) or (wrap and i <= endWrap) else -maxVal/NUM_OVERTONES for i in range(periodLength)], dtype=dtype)
-
-  
-        return pygame.sndarray.make_sound(wave)
-
-
-class Overtone:
-    def __init__(self, Hz, overtone, poly, phase = 0):       #Hz and phase all with respect to the fundamental tone of the overtones
-        self.Hz = Hz
-        self.phase = phase
-        self.overtone = overtone
-
-        self.oscillator = Oscillator(self.Hz*self.overtone, self.phase*self.overtone)
-        self.oscillator.set_volume(0)
-
-        self.poly = poly
-
-        self.radio = RadioBtn(overtone, poly.color)
-
-        self.active = False
-
-    def updateHz(self, Hz, subDiv):
-        self.Hz = Hz
-
-        self.phase = subDiv
-        self.oscillator.stop()
-
-        self.oscillator = Oscillator(self.Hz*self.overtone, self.phase*self.overtone)
-        if self.active:
-            self.oscillator.set_volume(1)
-        else:
-            self.oscillator.set_volume(0)
-
-    def setActive(self, active):
-        self.active = active
-
-        if active: 
-            self.oscillator.set_volume(1)
-        else:
-            self.oscillator.set_volume(0)
-
-        
 
 def updateBeatOffset(clock, beat_offset, ms_per_beat):
 
@@ -374,8 +379,6 @@ def updateBeatOffset(clock, beat_offset, ms_per_beat):
     return beat_offset
 
     
-
-
 
 
 
