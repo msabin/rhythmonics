@@ -144,15 +144,15 @@ class Tail:
 
 
         polyCover = self.perimeter/(2*BALL_RADIUS) #num of balls needed to cover its polygon's perimeter
-        self.tailLength = int(3*polyCover)         #Make the num of balls in tail longer than polyCover so it can wrap into its tail at high Hz and become opaque
+        self.tailLength = int(3.5*polyCover)         #Make the num of balls in tail longer than polyCover so it can wrap into its tail at high Hz and become opaque
         #alphaRate =1
 
-        self.alphaTail = [Ball(self.head.poly, self.head.alpha*math.log(1 + (self.tailLength-(i+1))/self.tailLength, 2), isHead=False) for i in range(self.tailLength)]
+        self.alphaTail = [Ball(self.head.poly, self.head.alpha*(1 - math.log(1 + (i+1)/self.tailLength, 2)), isHead=False) for i in range(self.tailLength)]
 
 
     
     def updatePos(self, beat_offset, ms_per_beat):
-        fadeTime = 25  #ms it takes for ball image to fade completely
+        fadeTime = 22  #ms it takes for ball image to fade completely
                        #operationally, this will determine how far back in time the tail reaches back before fading completely
 
 
@@ -167,7 +167,7 @@ class Tail:
             ball.updatePos(beat_offset - fadeTime*((i+1)/self.tailLength), ms_per_beat)
 
     def draw(self, console):
-        for ball in self.alphaTail:
+        for ball in reversed(self.alphaTail): #draw the lightest, furthest tail elements under the rest
             ball.draw(console)
 
 
