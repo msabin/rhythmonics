@@ -38,7 +38,6 @@ LABELS_COL = (0,0,0) #(76,100,161)
 
 ROOT_RADIUS = (.9*SCREEN_MIN)/2
 BALL_RADIUS = 7
-FADE_TIME = .1  #Fade time in ms
 
 MIN_HZ = 0
 MAX_HZ = 2000
@@ -98,7 +97,7 @@ class Ball:
         
 
     def updatePos(self, beat_offset, ms_per_beat): #subDiv in [0,1]
-        #if ms_per_beat == 0: return    #ARE THERE BEST PRACTICES FOR WHERE TO CHECK FOR DIV BY 0? TOOK THIS OUT BECAUSE DONE WHEN CALLED IN EVENT LOOP
+        if ms_per_beat == 0: return    #ARE THERE BEST PRACTICES FOR WHERE TO CHECK FOR DIV BY 0? TOOK THIS OUT BECAUSE DONE WHEN CALLED IN EVENT LOOP
 
         subDiv = beat_offset/ms_per_beat
         
@@ -136,7 +135,7 @@ class Tail:
         self.head = ball
 
 
-        # perimeter of the polygon the trail is on that it will need to cover
+        # perimeter of the polygon the trail is on
         self.perimeter = 0
         if self.head.poly.isPointy:
             self.perimeter = len(self.head.poly.verts) * math.dist(self.head.poly.verts[0], self.head.poly.verts[1])
@@ -144,8 +143,8 @@ class Tail:
             self.perimeter = 2*math.pi*self.head.poly.radius
 
 
-        polyCover = self.perimeter/BALL_RADIUS #num of balls needed to cover its polygon's perimeter
-        tailLength = int(2*polyCover)
+        polyCover = (2*math.pi*ROOT_RADIUS)/(2*BALL_RADIUS) #num of balls needed to cover the largest perimeter
+        tailLength = int(3*polyCover)
         #alphaRate =1
 
         self.alphaTail = [Ball(self.head.poly, self.head.alpha*math.log(1 + (tailLength-(i+1))/tailLength, 2), isHead=False) for i in range(tailLength)]
@@ -153,10 +152,17 @@ class Tail:
 
     
     def updatePos(self, beat_offset, ms_per_beat):
+        fadeTime = .1  #ms it takes for ball image to fade a little after it moves from a spot
+                       #operationally, this will send each tail ball back in time fadeTime ms from each other to create a faded tail from head
 
-        ms_per_ball = ms_per_beat/(self.perimeter/(1.5*BALL_RADIUS))  #ms required for a ball to travel the distance of its own radius*1.5
 
-        ball_offset = min(FADE_TIME, ms_per_ball) #drop a trail ball back in time every FADE_TIME ms or " " ms so that there aren't gaps between balls
+        #When the Hz gets too high, the balls will separate from each other because fadeTime is too long relative to Hz
+        #So we create a max distance that they can go back so the tail sticks together at high Hz
+        maxDist = BALL_RADIUS
+        ms_per_pixel = ms_per_beat/self.perimeter
+        ms_per_dist = ms_per_pixel * maxDist        #ms required for a ball to travel the maxDist on its polygon
+
+        ball_offset = min(fadeTime, ms_per_dist) #drop a trail ball back in time every fadeTime ms (or ms_per_dist ms so that there aren't gaps between balls)
         for i, ball in enumerate(self.alphaTail, start=1):
             ball.updatePos(beat_offset - ball_offset*i, ms_per_beat)
 
@@ -446,17 +452,16 @@ class main:
         console.fill(CONSOLE_COLOR)
         screen.fill(SCREEN_COLOR)
 
-        
+        beat_offset = updateBeatOffset(clock, beat_offset, ms_per_beat)
 
         for overtone in overtones:
             overtone.poly.draw(screen)
 
             
             if overtone.active == True:
-                if ms_per_beat != 0: 
-                    beat_offset = updateBeatOffset(clock, beat_offset, ms_per_beat)
+                #if ms_per_beat != 0: 
 
-                    overtone.poly.ball.updatePos(beat_offset, ms_per_beat)   #updates ball position (ball also updates the position of its tail)
+                overtone.poly.ball.updatePos(beat_offset, ms_per_beat)   #updates ball position (ball also updates the position of its tail)
 
                 overtone.poly.ball.draw(screen)                          #draws ball (ball also tells its tail to draw itself)
 
