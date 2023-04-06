@@ -135,7 +135,7 @@ class Tail:
         self.head = ball
 
 
-        # perimeter of the polygon the trail is on
+        # perimeter of the polygon the trail is on that it will need to cover
         self.perimeter = 0
         if self.head.poly.isPointy:
             self.perimeter = len(self.head.poly.verts) * math.dist(self.head.poly.verts[0], self.head.poly.verts[1])
@@ -143,28 +143,28 @@ class Tail:
             self.perimeter = 2*math.pi*self.head.poly.radius
 
 
-        polyCover = (2*math.pi*ROOT_RADIUS)/(2*BALL_RADIUS) #num of balls needed to cover the largest perimeter
-        tailLength = int(3*polyCover)
+        polyCover = self.perimeter/(2*BALL_RADIUS) #num of balls needed to cover its polygon's perimeter
+        self.tailLength = int(3*polyCover)         #Make the num of balls in tail longer than polyCover so it can wrap into its tail at high Hz and become opaque
         #alphaRate =1
 
-        self.alphaTail = [Ball(self.head.poly, self.head.alpha*math.log(1 + (tailLength-(i+1))/tailLength, 2), isHead=False) for i in range(tailLength)]
+        self.alphaTail = [Ball(self.head.poly, self.head.alpha*math.log(1 + (self.tailLength-(i+1))/self.tailLength, 2), isHead=False) for i in range(self.tailLength)]
 
 
     
     def updatePos(self, beat_offset, ms_per_beat):
-        fadeTime = .1  #ms it takes for ball image to fade a little after it moves from a spot
-                       #operationally, this will send each tail ball back in time fadeTime ms from each other to create a faded tail from head
+        fadeTime = 25  #ms it takes for ball image to fade completely
+                       #operationally, this will determine how far back in time the tail reaches back before fading completely
 
 
         #When the Hz gets too high, the balls will separate from each other because fadeTime is too long relative to Hz
         #So we create a max distance that they can go back so the tail sticks together at high Hz
-        maxDist = BALL_RADIUS
+        maxDist = self.tailLength*BALL_RADIUS  #trail can get long enough to pull the balls apart more than them overlapping by their radius
         ms_per_pixel = ms_per_beat/self.perimeter
         ms_per_dist = ms_per_pixel * maxDist        #ms required for a ball to travel the maxDist on its polygon
 
-        ball_offset = min(fadeTime, ms_per_dist) #drop a trail ball back in time every fadeTime ms (or ms_per_dist ms so that there aren't gaps between balls)
-        for i, ball in enumerate(self.alphaTail, start=1):
-            ball.updatePos(beat_offset - ball_offset*i, ms_per_beat)
+        fadeTime = min(fadeTime, ms_per_dist) #drop a trail ball back in time by the default fadeTime ms or only back enough that the tail sticks together
+        for i, ball in enumerate(self.alphaTail):
+            ball.updatePos(beat_offset - fadeTime*((i+1)/self.tailLength), ms_per_beat)
 
     def draw(self, console):
         for ball in self.alphaTail:
