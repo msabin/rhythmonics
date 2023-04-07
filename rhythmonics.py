@@ -11,6 +11,8 @@ CONSOLE_MIN = min(CONSOLE_WIDTH, CONSOLE_HEIGHT)
 CONSOLE_COLOR =  (0xff,0xbc,0xcf) #(169,193,255)
 CONSOLE_CENTER = pygame.Vector2(CONSOLE_WIDTH/2, CONSOLE_HEIGHT/2)
 
+CONSOLE_ORIGIN =(0,0)
+
 
 SCREEN_WIDTH = 425
 SCREEN_HEIGHT = 350
@@ -47,190 +49,65 @@ SMOOTH_SLIDE = True
 
 
 
-class Polygon:
-    def __init__(self, numVert, radius, center, color, isPointy = True):
-        self.radius = radius   #should I include these as attributes here?
-        self.center = center
+
+class Console:
+    def __init__(self, size = (CONSOLE_WIDTH, CONSOLE_HEIGHT), color = CONSOLE_COLOR):
+        self.surf = pygame.Surface(size)
+
         self.color = color
-        self.isPointy = isPointy
 
-        self.verts = []
-        
-        for i in range(numVert):
-            p = pygame.Vector2()
+        self.screen = Screen((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-            p.x = center[0] + radius * math.cos(math.pi/2 - 2*math.pi/numVert * i)      
-            p.y = center[1] - radius * math.sin(math.pi/2 - 2*math.pi/numVert * i)
+        self.overtones = self.screen.overtones
 
-            self.verts.append(p)  
-      
-        if isPointy:
-            self.inCirc = math.dist(center, (self.verts[0]+self.verts[1])/2)
-        #self.outCirc = self.inCirc/math.cos(math.pi/numVert)
+        self.radios = [overtone.radio for overtone in self.overtones]
 
-        self.ball = Ball(self)
+        #Slider's "voltage" will control VCOs (oscillators) of the overtones
+        self.slider = Slider(self.overtones)
 
-    
-    def draw(self, surface):
-        if self.isPointy:
-            pygame.draw.polygon(surface, self.color, self.verts, width=2)
-        else:
-            pygame.draw.circle(surface, self.color, self.center, self.radius, width=3)
-    
+    def draw(self, targetSurf):
+        self.surf.fill(self.color)
+
+        pygame.draw.rect(self.surf, TEAL, (SCREEN_ORIGIN - (50,15), (SCREEN_WIDTH+100,SCREEN_HEIGHT+60)), border_radius=5, border_bottom_right_radius=40)
+        #self.screen.draw(self.surf)
+
+        self.slider.draw(self.surf)
+        for radio in self.radios: radio.draw(self.surf)
+
+        targetSurf.blit(self.surf, CONSOLE_ORIGIN)
 
 
 
-class Ball:
-    def __init__(self, poly, alpha=255, isHead=True):
-        self.poly = poly
-        self.alpha = alpha
-        self.isHead = isHead
+class Screen:
+    def __init__(self, size = {SCREEN_WIDTH, SCREEN_HEIGHT}, color = SCREEN_COLOR):
+        self.surf = pygame.Surface(size)
 
-        self.pos = poly.verts[0]
-        self.color = poly.color
+        self.color = color
 
-        self.surf = pygame.Surface((BALL_RADIUS*2, BALL_RADIUS*2))
-        self.surf.set_colorkey((0,0,0))
-        self.surf.set_alpha(alpha)
-        pygame.draw.circle(self.surf, self.color, (BALL_RADIUS, BALL_RADIUS), BALL_RADIUS)
+        center = pygame.Vector2(size[0]/2, size[1]/2)
 
-        if isHead: self.tail = Tail(self)
-        
+        #Handcraft polygon aesthetics for the screen
+        root1 = Polygon(1,ROOT_RADIUS, center, ROOT_COLOR, isPointy=False)
+        root2 = Polygon(2,ROOT_RADIUS/math.sqrt(2), center, ROOT_COLOR, isPointy=False)
+        fifth1 = Polygon(3, ROOT_RADIUS/math.sqrt(2), center, FIFTH_COLOR)
+        root3 = Polygon(4,ROOT_RADIUS, center, ROOT_COLOR)
+        third1 = Polygon(5,fifth1.inCirc, center, THIRD_COLOR)
+        fifth2 = Polygon(6,ROOT_RADIUS/math.sqrt(2), center, FIFTH_COLOR)
+        seventh1 = Polygon(7,third1.inCirc, center, SEVENTH_COLOR)
 
-    def updatePos(self, beat_offset, ms_per_beat): #subDiv in [0,1]
-        if ms_per_beat == 0: return    #ARE THERE BEST PRACTICES FOR WHERE TO CHECK FOR DIV BY 0? TOOK THIS OUT BECAUSE DONE WHEN CALLED IN EVENT LOOP
+        self.polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1]
 
-        subDiv = beat_offset/ms_per_beat
-        
-        if self.poly.isPointy:
-            n = len(self.poly.verts)
+        self.overtones = [Overtone(len(poly.verts), poly, START_HZ) for poly in self.polys]
 
-            bigSubDiv = (subDiv * n) % n  #bigSubDiv in [0,n), subDiv can be negative
-            k = math.floor(bigSubDiv)     #biggest integer below bigSubDiv is the most recent vertex the ball has left
+    def draw(self, targetSurf):
+        self.surf.fill(self.color)
 
-            self.pos = self.poly.verts[k].lerp(self.poly.verts[(k+1)%n], bigSubDiv - k) #interpolate the vertices by normalized sub-division between them
+        for overtone in self.overtones: 
+            overtone.poly.draw(self.surf)
 
+            if overtone.active: overtone.poly.ball.draw(self.surf)
 
-        else:
-            radius = self.poly.radius
-            center = self.poly.center
-
-            self.pos = pygame.math.Vector2(center[0] + radius * math.cos(math.pi/2 - 2*math.pi*subDiv), center[1] - radius * math.sin(math.pi/2 - 2*math.pi*subDiv))
-
-        if self.isHead: self.tail.updatePos(beat_offset, ms_per_beat)
-
-
-    def draw(self, screen): 
-        if self.isHead: self.tail.draw(screen)
-
-        screen.blit(self.surf, self.pos - pygame.math.Vector2(BALL_RADIUS, BALL_RADIUS))
-        
-
-
-
-
-class Tail:
-    def __init__(self, ball):
-        self.head = ball
-
-
-        # perimeter of the polygon the trail is on that it will need to cover
-        self.perimeter = 0
-        if self.head.poly.isPointy:
-            self.perimeter = len(self.head.poly.verts) * math.dist(self.head.poly.verts[0], self.head.poly.verts[1])
-        else:
-            self.perimeter = 2*math.pi*self.head.poly.radius
-
-
-        polyCover = self.perimeter/(2*BALL_RADIUS) #num of balls needed to cover its polygon's perimeter
-        self.tailLength = int(3.5*polyCover)         #Make the num of balls in tail longer than polyCover so it can wrap into its tail at high Hz and become opaque
-        #alphaRate =1
-
-        self.alphaTail = [Ball(self.head.poly, self.head.alpha*(1 - math.log(1 + (i+1)/self.tailLength, 2)), isHead=False) for i in range(self.tailLength)]
-
-
-    
-    def updatePos(self, beat_offset, ms_per_beat):
-        fadeTime = 22  #ms it takes for ball image to fade completely
-                       #operationally, this will determine how far back in time the tail reaches back before fading completely
-
-
-        #When the Hz gets too high, the balls will separate from each other because fadeTime is too long relative to Hz
-        #So we create a max distance that they can go back so the tail sticks together at high Hz
-        maxDist = self.tailLength*BALL_RADIUS  #trail can get long enough to pull the balls apart more than them overlapping by their radius
-        ms_per_pixel = ms_per_beat/self.perimeter
-        ms_per_dist = ms_per_pixel * maxDist        #ms required for a ball to travel the maxDist on its polygon
-
-        fadeTime = min(fadeTime, ms_per_dist) #drop a trail ball back in time by the default fadeTime ms or only back enough that the tail sticks together
-        for i, ball in enumerate(self.alphaTail):
-            ball.updatePos(beat_offset - fadeTime*((i+1)/self.tailLength), ms_per_beat)
-
-    def draw(self, console):
-        for ball in reversed(self.alphaTail): #draw the lightest, furthest tail elements under the rest
-            ball.draw(console)
-
-
-
-
-
-def Oscillator(Hz, phase=0, sampRate=44100): #phase in relative terms: in [0,1] and represents fraction of period of Hz to offset
-        
-        dtype = "int8"
-        maxVal = np.iinfo(dtype).max
-
-        secs = 1/Hz  #Get exactly enough samples for a full wave cycle
-        periodLength = int(secs*sampRate)
-        pulseWidth = min(50, (1/3)*periodLength)
-
-        startPulse = ((1-phase)%1)*periodLength           #for phase in [0,1] of one cycle, start pulse at 1-phase fraction of periodLength (neg vals work via mod 1)
-        endPulse = startPulse + pulseWidth                #end pulse after its width, with possilbe wrap-around
-        endWrap = min(endPulse, endPulse % periodLength)
-        wrap = bool(endWrap < endPulse)
-
-        wave = np.array([maxVal/NUM_OVERTONES if (i >= startPulse and i <= endPulse) or (wrap and i <= endWrap) else -maxVal/NUM_OVERTONES for i in range(periodLength)], dtype=dtype)
-
-  
-        return pygame.sndarray.make_sound(wave)
-
-
-
-
-class Overtone:
-    def __init__(self, Hz, overtone, poly, phase = 0):       #Hz and phase all with respect to the fundamental tone of the overtones
-        self.Hz = Hz
-        self.phase = phase
-        self.overtone = overtone
-
-        self.oscillator = Oscillator(self.Hz*self.overtone, self.phase*self.overtone)
-        self.oscillator.set_volume(0)
-
-        self.poly = poly
-
-        self.radio = RadioBtn(overtone, poly.color)
-
-        self.active = False
-
-    def updateHz(self, Hz, subDiv):
-        self.Hz = Hz
-
-        self.phase = subDiv
-        self.oscillator.stop()
-
-        self.oscillator = Oscillator(self.Hz*self.overtone, self.phase*self.overtone)
-        if self.active:
-            if not SMOOTH_SLIDE: self.oscillator.set_volume(1)
-        else:
-            self.oscillator.set_volume(0)
-
-    def setActive(self, active):
-        self.active = active
-
-        if active: 
-            if not SMOOTH_SLIDE: self.oscillator.set_volume(1)
-        else:
-            self.oscillator.set_volume(0)
-
-        
+        targetSurf.blit(self.surf, SCREEN_ORIGIN)
 
 
 class Slider:
@@ -328,9 +205,11 @@ class Slider:
 
                 buffer_time = (1/Hz)*26            #start updated soundwaves in the future by buffer_time and then wait to play them (sync with graphics)
 
-                beat_offset = updateBeatOffset(clock, beat_offset, ms_per_beat)
 
-                for overtone in self.overtones: overtone.updateHz(Hz, subDiv = (beat_offset+buffer_time)/ms_per_beat)
+                beat_offset = (beat_offset + clock.get_time()) % ms_per_beat
+                clock.tick()
+
+                for overtone in self.overtones: overtone.updateHz(Hz, (beat_offset+buffer_time)/ms_per_beat)
 
                 if SMOOTH_SLIDE: 
                     for overtone in self.overtones: overtone.oscillator.set_volume(0)
@@ -342,10 +221,6 @@ class Slider:
 
 
         return (beat_offset, ms_per_beat)
-
-
-
-
 
 
 class RadioBtn:
@@ -366,17 +241,186 @@ class RadioBtn:
 
 
 
-def updateBeatOffset(clock, beat_offset, ms_per_beat):
 
-    if ms_per_beat != 0:
-            beat_offset += clock.get_time()
 
-            while beat_offset >= ms_per_beat:
-                beat_offset -= ms_per_beat
 
-            clock.tick()
-            
-    return beat_offset
+class Overtone:
+    def __init__(self, overtone, poly, fundHz, fundPhase = 0):       #Hz and phase all with respect to the fundamental tone of the overtones
+        self.Hz = fundHz * overtone
+        self.phase = fundPhase * overtone
+        self.overtone = overtone
+
+
+        self.oscillator = Oscillator(self.Hz, self.phase)
+        self.oscillator.set_volume(0)
+
+        self.poly = poly
+
+        self.radio = RadioBtn(overtone, poly.color)
+
+        self.active = False
+
+    def updateHz(self, fundHz, fundPhase):
+        self.Hz = fundHz * self.overtone
+
+        self.phase = fundPhase * self.overtone
+        self.oscillator.stop()
+
+        self.oscillator = Oscillator(self.Hz, self.phase)
+        if self.active:
+            if not SMOOTH_SLIDE: self.oscillator.set_volume(1)
+        else:
+            self.oscillator.set_volume(0)
+
+    def setActive(self, active):
+        self.active = active
+
+        if active: 
+            if not SMOOTH_SLIDE: self.oscillator.set_volume(1)
+        else:
+            self.oscillator.set_volume(0)
+
+
+
+def Oscillator(Hz, phase=0, sampRate=44100): #phase in relative terms: in [0,1] and represents fraction of period of Hz to offset
+        
+        dtype = "int8"
+        maxVal = np.iinfo(dtype).max
+
+        secs = 1/Hz  #Get exactly enough samples for a full wave cycle
+        periodLength = int(secs*sampRate)
+        pulseWidth = min(50, (1/3)*periodLength)
+
+        startPulse = ((1-phase)%1)*periodLength           #for phase in [0,1] of one cycle, start pulse at 1-phase fraction of periodLength (neg vals work via mod 1)
+        endPulse = startPulse + pulseWidth                #end pulse after its width, with possilbe wrap-around
+        endWrap = min(endPulse, endPulse % periodLength)
+        wrap = bool(endWrap < endPulse)
+
+        wave = np.array([maxVal/NUM_OVERTONES if (i >= startPulse and i <= endPulse) or (wrap and i <= endWrap) else -maxVal/NUM_OVERTONES for i in range(periodLength)], dtype=dtype)
+
+  
+        return pygame.sndarray.make_sound(wave)
+
+
+class Polygon:
+    def __init__(self, numVert, radius, center, color, isPointy = True):
+        self.radius = radius   #should I include these as attributes here?
+        self.center = center
+        self.color = color
+        self.isPointy = isPointy
+
+        self.verts = []
+        
+        for i in range(numVert):
+            p = pygame.Vector2()
+
+            p.x = center[0] + radius * math.cos(math.pi/2 - 2*math.pi/numVert * i)      
+            p.y = center[1] - radius * math.sin(math.pi/2 - 2*math.pi/numVert * i)
+
+            self.verts.append(p)  
+      
+        if isPointy:
+            self.inCirc = math.dist(center, (self.verts[0]+self.verts[1])/2)
+        #self.outCirc = self.inCirc/math.cos(math.pi/numVert)
+
+        self.ball = Ball(self)
+
+    
+    def draw(self, surface):
+        if self.isPointy:
+            pygame.draw.polygon(surface, self.color, self.verts, width=2)
+        else:
+            pygame.draw.circle(surface, self.color, self.center, self.radius, width=3)
+    
+
+class Ball:
+    def __init__(self, poly, alpha=255, isHead=True):
+        self.poly = poly
+        self.alpha = alpha
+        self.isHead = isHead
+
+        self.pos = poly.verts[0]
+        self.color = poly.color
+
+        self.surf = pygame.Surface((BALL_RADIUS*2, BALL_RADIUS*2))
+        self.surf.set_colorkey((0,0,0))
+        self.surf.set_alpha(alpha)
+        pygame.draw.circle(self.surf, self.color, (BALL_RADIUS, BALL_RADIUS), BALL_RADIUS)
+
+        if isHead: self.tail = Tail(self)
+        
+
+    def updatePos(self, beat_offset, ms_per_beat): #subDiv in [0,1]
+        if ms_per_beat == 0: return    #ARE THERE BEST PRACTICES FOR WHERE TO CHECK FOR DIV BY 0? TOOK THIS OUT BECAUSE DONE WHEN CALLED IN EVENT LOOP
+
+        subDiv = beat_offset/ms_per_beat
+        
+        if self.poly.isPointy:
+            n = len(self.poly.verts)
+
+            bigSubDiv = (subDiv * n) % n  #bigSubDiv in [0,n), subDiv can be negative
+            k = math.floor(bigSubDiv)     #biggest integer below bigSubDiv is the most recent vertex the ball has left
+
+            self.pos = self.poly.verts[k].lerp(self.poly.verts[(k+1)%n], bigSubDiv - k) #interpolate the vertices by normalized sub-division between them
+
+
+        else:
+            radius = self.poly.radius
+            center = self.poly.center
+
+            self.pos = pygame.math.Vector2(center[0] + radius * math.cos(math.pi/2 - 2*math.pi*subDiv), center[1] - radius * math.sin(math.pi/2 - 2*math.pi*subDiv))
+
+        if self.isHead: self.tail.updatePos(beat_offset, ms_per_beat)
+
+
+    def draw(self, screen): 
+        if self.isHead: self.tail.draw(screen)
+
+        screen.blit(self.surf, self.pos - pygame.math.Vector2(BALL_RADIUS, BALL_RADIUS))
+        
+
+class Tail:
+    def __init__(self, ball):
+        self.head = ball
+
+
+        # perimeter of the polygon the trail is on that it will need to cover
+        self.perimeter = 0
+        if self.head.poly.isPointy:
+            self.perimeter = len(self.head.poly.verts) * math.dist(self.head.poly.verts[0], self.head.poly.verts[1])
+        else:
+            self.perimeter = 2*math.pi*self.head.poly.radius
+
+
+        polyCover = self.perimeter/(2*BALL_RADIUS) #num of balls needed to cover its polygon's perimeter
+        self.tailLength = int(3.5*polyCover)         #Make the num of balls in tail longer than polyCover so it can wrap into its tail at high Hz and become opaque
+        #alphaRate =1
+
+        self.alphaTail = [Ball(self.head.poly, self.head.alpha*(1 - math.log(1 + (i+1)/self.tailLength, 2)), isHead=False) for i in range(self.tailLength)]
+
+
+    
+    def updatePos(self, beat_offset, ms_per_beat):
+        fadeTime = 22  #ms it takes for ball image to fade completely
+                       #operationally, this will determine how far back in time the tail reaches back before fading completely
+
+
+        #When the Hz gets too high, the balls will separate from each other because fadeTime is too long relative to Hz
+        #So we create a max distance that they can go back so the tail sticks together at high Hz
+        maxDist = self.tailLength*BALL_RADIUS  #trail can get long enough to pull the balls apart more than them overlapping by their radius
+        ms_per_pixel = ms_per_beat/self.perimeter
+        ms_per_dist = ms_per_pixel * maxDist        #ms required for a ball to travel the maxDist on its polygon
+
+        fadeTime = min(fadeTime, ms_per_dist) #drop a trail ball back in time by the default fadeTime ms or only back enough that the tail sticks together
+        for i, ball in enumerate(self.alphaTail):
+            ball.updatePos(beat_offset - fadeTime*((i+1)/self.tailLength), ms_per_beat)
+
+    def draw(self, console):
+        for ball in reversed(self.alphaTail): #draw the lightest, furthest tail elements under the rest
+            ball.draw(console)
+
+
+
 
     
 
@@ -387,58 +431,28 @@ class main:
 
     pygame.mixer.init(channels=1)
     pygame.init()
-    #pygame.display.init()
 
 
     pygame.mouse.set_cursor(pygame.cursors.tri_left)
+    #dispaySize = pygame.display.get_desktop_sizes()
 
 
+    window = pygame.display.set_mode((CONSOLE_WIDTH, CONSOLE_HEIGHT))
 
-    dispaySize = pygame.display.get_desktop_sizes()
+    console = Console()
 
+    overtones = console.overtones
+    slider = console.slider
+    radios = console.radios
+    screen = console.screen
 
-    console = pygame.display.set_mode((CONSOLE_WIDTH, CONSOLE_HEIGHT))
-
-    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-
-
-
-    #Handcraft polygon aesthetics for the screen
-    root1 = Polygon(1,ROOT_RADIUS, SCREEN_CENTER, ROOT_COLOR, isPointy=False)
-    root2 = Polygon(2,ROOT_RADIUS/math.sqrt(2), SCREEN_CENTER, ROOT_COLOR, isPointy=False)
-    fifth1 = Polygon(3, ROOT_RADIUS/math.sqrt(2), SCREEN_CENTER, FIFTH_COLOR)
-    root3 = Polygon(4,ROOT_RADIUS, SCREEN_CENTER, ROOT_COLOR)
-    third1 = Polygon(5,fifth1.inCirc, SCREEN_CENTER, THIRD_COLOR)
-    fifth2 = Polygon(6,ROOT_RADIUS/math.sqrt(2), SCREEN_CENTER, FIFTH_COLOR)
-    seventh1 = Polygon(7,third1.inCirc, SCREEN_CENTER, SEVENTH_COLOR)
-
-    polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1]
-
-
-
-
-    #Instantiate overtones that correspond to the handcrafted polygons
-    Hz = START_HZ
-    overtones = [Overtone(START_HZ, len(poly.verts), poly) for poly in polys]
-
-
-    #Slider's "voltage" will control VCOs (oscillators) of the overtones
-    slider = Slider(overtones)
+    polys = screen.polys
+    balls = [poly.ball for poly in polys]
 
     
     
 
-
-
-    
-    user_done = False
-    sliderSelected = False
-
-    ms_per_beat = 1000/START_HZ #how many milliseconds in a beat
-    beat_offset = 0
-
-
+    console.draw(window)
 
     clock = pygame.time.Clock()
     clock.tick()
@@ -449,47 +463,13 @@ class main:
     overtones[0].oscillator.set_volume(1)
 
     
+    user_done = False
+    sliderSelected = False
+
+    ms_per_beat = 1000/START_HZ #how many milliseconds in a beat
+    beat_offset = 0
+
     while not user_done:
-
-
-        console.fill(CONSOLE_COLOR)
-        screen.fill(SCREEN_COLOR)
-
-        beat_offset = updateBeatOffset(clock, beat_offset, ms_per_beat)
-
-        for overtone in overtones:
-            overtone.poly.draw(screen)
-
-            
-            if overtone.active == True:
-                #if ms_per_beat != 0: 
-
-                overtone.poly.ball.updatePos(beat_offset, ms_per_beat)   #updates ball position (ball also updates the position of its tail)
-
-                overtone.poly.ball.draw(screen)                          #draws ball (ball also tells its tail to draw itself)
-
-
-            overtone.radio.draw(console)
-        
-        pygame.draw.rect(console, TEAL, (SCREEN_ORIGIN - (50,15), (SCREEN_WIDTH+100,SCREEN_HEIGHT+60)), border_radius=5, border_bottom_right_radius=40)
-        console.blit(screen, SCREEN_ORIGIN)
-
-        slider.draw(console)
-
-        
-        pygame.display.update()
-
-
-        if SMOOTH_SLIDE:
-            #fades volume in over event loops runs so that we don't get gross clicks as the Hz are adjusted with the slider
-            for overtone in overtones:
-                if overtone.active:
-                    vol = overtone.oscillator.get_volume()
-                    if vol < 1:
-                        vol = min(vol + .05, 1)
-                        overtone.oscillator.set_volume(vol)
-            
-
 
 
         for event in pygame.event.get():
@@ -519,6 +499,8 @@ class main:
 
                     (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
 
+                    console.draw(window)
+
 
 
             elif event.type == pygame.MOUSEBUTTONUP:
@@ -526,8 +508,36 @@ class main:
 
                     sliderSelected = False                    #unselect slider and then update slider's affect on Hz
 
-                    if not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
+                    #if not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
 
+            
+
+            
+        if ms_per_beat != 0:
+            beat_offset = (beat_offset + clock.get_time()) % ms_per_beat
+
+            clock.tick()
+
+        for overtone in overtones:
+            if overtone.active == True:
+                #if ms_per_beat != 0: 
+                overtone.poly.ball.updatePos(beat_offset, ms_per_beat)   #updates ball position (ball also updates the position of its tail)
+
+
+        screen.draw(window)
+        pygame.display.flip()
+
+
+
+        
+        if SMOOTH_SLIDE:
+            #fades volume in over event loops runs so that we don't get gross clicks as the Hz are adjusted with the slider
+            for overtone in overtones:
+                if overtone.active:
+                    vol = overtone.oscillator.get_volume()
+                    if vol < 1:
+                        vol = min(vol + .05, 1)
+                        overtone.oscillator.set_volume(vol)
 
         #clock.tick()                
 
