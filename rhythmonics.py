@@ -8,7 +8,6 @@ import numpy as np
 CONSOLE_WIDTH = 900
 CONSOLE_HEIGHT = 500
 CONSOLE_MIN = min(CONSOLE_WIDTH, CONSOLE_HEIGHT)
-CONSOLE_COLOR =  (0xff,0xbc,0xcf) #(169,193,255)
 CONSOLE_CENTER = pygame.Vector2(CONSOLE_WIDTH/2, CONSOLE_HEIGHT/2)
 
 CONSOLE_ORIGIN =(0,0)
@@ -16,7 +15,7 @@ CONSOLE_ORIGIN =(0,0)
 
 SCREEN_WIDTH = 425
 SCREEN_HEIGHT = 350
-SCREEN_MIN = min(SCREEN_WIDTH, SCREEN_HEIGHT)
+
 SCREEN_COLOR = (112, 198, 169)
 SCREEN_CENTER = pygame.Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
 
@@ -25,25 +24,11 @@ SCREEN_ORIGIN = CONSOLE_CENTER - SCREEN_CENTER - (0,20)
 
 NUM_OVERTONES = 7
 
-ROOT_COLOR = (237,199,176)
-THIRD_COLOR = (118,150,222)
-FIFTH_COLOR = (255,151,152)
-SEVENTH_COLOR = (139,72,82)
 
-TEAL = (0,0x97,0x94)
 
-DIGITAL_BG = (0,0x35,0x55)
-DIGITAL_OFF = (0,0x52,0x60)
-DIGITAL_ON = (0,0xcf,0xdd)
 
-LABELS_COL = (0,0,0) #(76,100,161)
-
-ROOT_RADIUS = (.9*SCREEN_MIN)/2
 BALL_RADIUS = 7
 
-MIN_HZ = 0
-MAX_HZ = 2000
-START_HZ = 1 #1Hz = 60bpm
 
 SMOOTH_SLIDE = True
 
@@ -51,24 +36,63 @@ SMOOTH_SLIDE = True
 
 
 class Console:
-    def __init__(self, size = (CONSOLE_WIDTH, CONSOLE_HEIGHT), color = CONSOLE_COLOR):
-        self.surf = pygame.Surface(size)
+    def __init__(self, consoleSize, startHz):
+        self.surf = pygame.Surface(consoleSize)
 
-        self.color = color
+        self.baseColor = (0xff,0xbc,0xcf) #(169,193,255)
+        self.secColor = (0,0x97,0x94)
 
-        self.screen = Screen((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+        screenSize = ((425/900)*consoleSize[0], (350/500)*consoleSize[1])
+        screenColor = (112, 198, 169)
+        self.screen = Screen(screenSize, screenColor, startHz)
 
         self.overtones = self.screen.overtones
 
         self.radios = [overtone.radio for overtone in self.overtones]
 
+        
+
+    
+        labelsFontSize = 18
+        #path = pygame.font.match_font('Abadi MT Condensed Extra Bold')
+        labelsFont = pygame.font.Font('Menlo.ttc', labelsFontSize)
+        labelsCol = (0,0,0) #(76,100,161)
+
+
+        labels = [labelsFont.render('Hz', True, labelsCol), labelsFont.render('BPM', True, labelsCol), 
+                  labelsFont.render('FREEZE', True, labelsCol), labelsFont.render('GROOVE', True, labelsCol), 
+                  labelsFont.render('CHAOS', True, labelsCol), labelsFont.render('HARMONY', True, labelsCol), 
+                  labelsFont.render('EEEEEE', True, labelsCol)]
+        
+
+
+        digitalFontSize = 30
+        digitalFont = pygame.font.Font('digital-7 (mono).ttf', digitalFontSize)
+
+        digitalOn = (0,0xcf,0xdd)
+        digitialOff = (0,0x52,0x60)
+        digitialBG = (0,0x35,0x55)
+
+        HzBox = digitalFont.render(' 8888.88 ', False, digitialOff, digitialBG)  #digital box to print Hz on
+        BPM_Box = digitalFont.render(' 888888 ', False, digitialOff, digitialBG)
+        displayBoxes = [HzBox, BPM_Box]
+
+
         #Slider's "voltage" will control VCOs (oscillators) of the overtones
-        self.slider = Slider(self.overtones)
+        self.slider = Slider(self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
+
+        self.ratioDisp = RatioDisp()
+
+
+        
+
+        
 
     def draw(self, targetSurf):
-        self.surf.fill(self.color)
+        self.surf.fill(self.baseColor)
 
-        pygame.draw.rect(self.surf, TEAL, (SCREEN_ORIGIN - (50,15), (SCREEN_WIDTH+100,SCREEN_HEIGHT+60)), border_radius=5, border_bottom_right_radius=40)
+        pygame.draw.rect(self.surf, self.secColor, (SCREEN_ORIGIN - (50,15), (SCREEN_WIDTH+100,SCREEN_HEIGHT+70)), border_radius=5, border_bottom_right_radius=40)
         #self.screen.draw(self.surf)
 
         self.slider.draw(self.surf)
@@ -79,7 +103,7 @@ class Console:
 
 
 class Screen:
-    def __init__(self, size = {SCREEN_WIDTH, SCREEN_HEIGHT}, color = SCREEN_COLOR):
+    def __init__(self, size, color, startHz):
         self.surf = pygame.Surface(size)
 
         self.color = color
@@ -87,17 +111,25 @@ class Screen:
         center = pygame.Vector2(size[0]/2, size[1]/2)
 
         #Handcraft polygon aesthetics for the screen
-        root1 = Polygon(1,ROOT_RADIUS, center, ROOT_COLOR, isPointy=False)
-        root2 = Polygon(2,ROOT_RADIUS/math.sqrt(2), center, ROOT_COLOR, isPointy=False)
-        fifth1 = Polygon(3, ROOT_RADIUS/math.sqrt(2), center, FIFTH_COLOR)
-        root3 = Polygon(4,ROOT_RADIUS, center, ROOT_COLOR)
-        third1 = Polygon(5,fifth1.inCirc, center, THIRD_COLOR)
-        fifth2 = Polygon(6,ROOT_RADIUS/math.sqrt(2), center, FIFTH_COLOR)
-        seventh1 = Polygon(7,third1.inCirc, center, SEVENTH_COLOR)
+        rootColor = (237,199,176)
+        thirdColor = (118,150,222)
+        fifthColor = (255,151,152)
+        seventhColor = (139,72,82)
+        
+        rootRadius = (.9 * min(size[0], size[1]))/2
+        
+
+        root1 = Polygon(1,rootRadius, center, rootColor, isPointy=False)
+        root2 = Polygon(2,rootRadius/math.sqrt(2), center, rootColor, isPointy=False)
+        fifth1 = Polygon(3, rootRadius/math.sqrt(2), center, fifthColor)
+        root3 = Polygon(4,rootRadius, center, rootColor)
+        third1 = Polygon(5,fifth1.inCirc, center, thirdColor)
+        fifth2 = Polygon(6,rootRadius/math.sqrt(2), center, fifthColor)
+        seventh1 = Polygon(7,third1.inCirc, center, seventhColor)
 
         self.polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1]
 
-        self.overtones = [Overtone(len(poly.verts), poly, START_HZ) for poly in self.polys]
+        self.overtones = [Overtone(len(poly.verts), poly, startHz) for poly in self.polys]
 
     def draw(self, targetSurf):
         self.surf.fill(self.color)
@@ -111,7 +143,7 @@ class Screen:
 
 
 class Slider:
-    def __init__(self, overtones):
+    def __init__(self, overtones, color, labels, displayBoxes, digitalFont, digitalCol):
         self.overtones = overtones
 
         self.miny = 75
@@ -120,34 +152,23 @@ class Slider:
 
         self.sliderPos = pygame.Vector2(125, self.maxy-.25*(self.maxy-self.miny))
 
-
-        self.color = TEAL
-
+        self.color = color
 
 
 
-        self.labelsFontSize = 18
-        #path = pygame.font.match_font('Abadi MT Condensed Extra Bold')
-        labelsFont = pygame.font.Font('Menlo.ttc', self.labelsFontSize)
+        self.HzLabel = labels.pop(0)
+        self.BPM_Label = labels.pop(0)
+        self.labels = labels
 
-        self.labels = [labelsFont.render('FREEZE', True, LABELS_COL), labelsFont.render('GROOVE', True, LABELS_COL), labelsFont.render('CHAOS', True, LABELS_COL),
-                       labelsFont.render('HARMONY', True, LABELS_COL), labelsFont.render('EEEEEE', True, LABELS_COL)]
-        
-        
+        self.HzBox = displayBoxes[0]
+        self.BPM_Box = displayBoxes[1]
 
-        self.digitalFontSize = 30
-        self.digitalFont = pygame.font.Font('digital-7 (mono).ttf', self.digitalFontSize)
+        self.digitalFont = digitalFont
+        self.digitalCol = digitalCol
+        self.HzDisp = digitalFont.render(" " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " ", False, self.digitalCol)
+        self.BPM_Disp = digitalFont.render(" " + f'{self.overtones[0].Hz * 60:06.0f}'.replace("1", " 1") + " ", False, self.digitalCol)
 
 
-        self.HzBox = self.digitalFont.render(' 8888.88 ', False, DIGITAL_OFF, DIGITAL_BG)  #digital box to print Hz on
-        hzStr = " " + f'{START_HZ:07.2f}'.replace("1", " 1") + " "                         #formatted string to print START_HZ on HzBox
-        self.HzDisp = self.digitalFont.render(hzStr, False, DIGITAL_ON)
-        self.HzLabel = labelsFont.render('Hz', True, LABELS_COL)
-
-        self.BPM_Box = self.digitalFont.render(' 888888 ', False, DIGITAL_OFF, DIGITAL_BG)
-        bpmStr = " " + f'{START_HZ*60:06}'.replace("1", " 1") + " "
-        self.BPM_Disp = self.digitalFont.render(bpmStr, False, DIGITAL_ON)
-        self.BPM_Label = labelsFont.render('BPM', True, LABELS_COL)
 
 
                 
@@ -160,8 +181,9 @@ class Slider:
         surface.blit(self.HzDisp, (25, self.miny-50))
         surface.blit(self.HzLabel, (25+self.HzBox.get_width()+10,self.miny-45))
 
+        
         for i, label in enumerate(self.labels):
-            surface.blit(label, (25, (self.maxy - self.labelsFontSize/2) - (i/4)*(self.maxy - self.miny))) 
+            surface.blit(label, (25, (self.maxy - label.get_height()/2) - (i/4)*(self.maxy - self.miny))) 
 
         surface.blit(self.BPM_Box, (25, self.maxy+20))
         surface.blit(self.BPM_Disp, (25, self.maxy+20))
@@ -185,10 +207,10 @@ class Slider:
 
 
         hzStr = " " + f'{Hz:07.2f}'.replace("1", " 1") + " "
-        self.HzDisp = self.digitalFont.render(hzStr, False, DIGITAL_ON)
+        self.HzDisp = self.digitalFont.render(hzStr, False, self.digitalCol)
 
         bpmStr = " " + f'{Hz*60:06.0f}'.replace("1", " 1") + " "
-        self.BPM_Disp = self.digitalFont.render(bpmStr, False, DIGITAL_ON)
+        self.BPM_Disp = self.digitalFont.render(bpmStr, False, self.digitalCol)
 
 
 
@@ -239,6 +261,9 @@ class RadioBtn:
         pygame.draw.circle(surface, self.color, self.pos, 5)
 
 
+class RatioDisp:
+    def __init__(self) -> None:
+        pass
 
 
 
@@ -436,10 +461,13 @@ class main:
     pygame.mouse.set_cursor(pygame.cursors.tri_left)
     #dispaySize = pygame.display.get_desktop_sizes()
 
+    windowSize = (900, 500)
+    window = pygame.display.set_mode(windowSize)
 
-    window = pygame.display.set_mode((CONSOLE_WIDTH, CONSOLE_HEIGHT))
+    Hz =  1
 
-    console = Console()
+    consoleSize = windowSize
+    console = Console(consoleSize, Hz)
 
     overtones = console.overtones
     slider = console.slider
@@ -466,7 +494,7 @@ class main:
     user_done = False
     sliderSelected = False
 
-    ms_per_beat = 1000/START_HZ #how many milliseconds in a beat
+    ms_per_beat = 1000/Hz #how many milliseconds in a beat
     beat_offset = 0
 
     while not user_done:
