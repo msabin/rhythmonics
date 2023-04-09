@@ -15,7 +15,7 @@ BALL_RADIUS = 7
 
 
 SMOOTH_SLIDE = True
-TYPESET = True
+TYPESET = False
 
 
 
@@ -71,7 +71,7 @@ class Console:
         displayBoxes = [HzBox, BPM_Box]
 
 
-        sliderAreaOrigin = (20 , 30)
+        sliderAreaOrigin = (25 , 30)
         sliderAreaHeight = consoleSize[1]*.9
 
         #Slider's "voltage" will control VCOs (oscillators) of the overtones
@@ -148,6 +148,8 @@ class SliderArea:
 
         self.color = color
 
+        self.sliderSize = (10,20) #size of rectangular slider handle
+
 
 
         self.HzLabel = labels.pop(0)
@@ -171,7 +173,7 @@ class SliderArea:
         
         self.labelsWidth = max([label.get_width() for label in labels])
         self.horizontalBuf = 20
-        sliderOffset = self.origin[0] + max(self.labelsWidth, self.BPM_Box.get_width()) + self.horizontalBuf
+        sliderOffset = self.origin[0] + self.labelsWidth + self.horizontalBuf + self.sliderSize[0]
         sliderStart = .25        #slider knob starts at this fraction of the slider range
 
         self.sliderPos = pygame.Vector2(sliderOffset, self.sliderMaxy-sliderStart*(self.sliderMaxy-self.sliderMiny))
@@ -183,20 +185,19 @@ class SliderArea:
 
         sliderRutCol = (150,150,150)
         pygame.draw.line(surface, sliderRutCol, (self.sliderPos[0], self.sliderMiny), (self.sliderPos[0], self.sliderMaxy), width=2) #slider track visualized
-        sliderWidth = 10
         pygame.draw.circle(surface, self.color, self.sliderPos, 10)   #slider handle
 
         surface.blit(self.HzBox, (self.origin[0], self.origin[1]))
         surface.blit(self.HzDisp, (self.origin[0], self.origin[1]))
-        surface.blit(self.HzLabel, (self.origin[0]+self.HzBox.get_width()+self.horizontalBuf,self.origin[1]))
+        surface.blit(self.HzLabel, (self.origin[0]+self.HzBox.get_width()+self.horizontalBuf/2,self.origin[1]))
 
         
         for i, label in enumerate(self.labels):
-            surface.blit(label, (self.sliderPos[0] - sliderWidth - self.horizontalBuf - label.get_width(), (self.sliderMaxy - label.get_height()/2) - (i/4)*(self.sliderMaxy - self.sliderMiny))) 
+            surface.blit(label, (self.sliderPos[0] - self.sliderSize[0] - self.horizontalBuf - label.get_width(), (self.sliderMaxy - label.get_height()/2) - (i/4)*(self.sliderMaxy - self.sliderMiny))) 
 
         surface.blit(self.BPM_Box, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
         surface.blit(self.BPM_Disp, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
-        surface.blit(self.BPM_Label, (self.origin[0]+self.BPM_Box.get_width()+self.horizontalBuf,self.origin[1] + self.height - self.BPM_Box.get_height()))
+        surface.blit(self.BPM_Label, (self.origin[0]+self.BPM_Box.get_width()+self.horizontalBuf/2,self.origin[1] + self.height - self.BPM_Box.get_height()))
 
 
 
