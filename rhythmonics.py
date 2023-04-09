@@ -15,16 +15,16 @@ BALL_RADIUS = 7
 
 
 SMOOTH_SLIDE = True
-TYPESET = False
+TYPESET = True
 
 
 
 
 class Console:
-    def __init__(self, position, size, startHz):
+    def __init__(self, origin, size, startHz):
         self.surf = pygame.Surface(size)
 
-        self.position = position
+        self.origin = origin
 
         self.baseColor = (0xff,0xb3,0xc6) #(169,193,255)
         self.secColor = (0,0x97,0x94)
@@ -36,10 +36,10 @@ class Console:
 
         screenCenter = pygame.Vector2(screenSize[0]/2, screenSize[1]/2)
         consoleCenter = consoleSize/2
-        screenPos = consoleCenter - screenCenter - (0,20)
+        screenOrigin = consoleCenter - screenCenter - (0,20)
 
         screenColor = (112, 198, 169)
-        self.screen = Screen(screenPos, screenSize, screenColor, startHz)
+        self.screen = Screen(screenOrigin, screenSize, screenColor, startHz)
 
         self.overtones = self.screen.overtones
 
@@ -71,11 +71,11 @@ class Console:
         displayBoxes = [HzBox, BPM_Box]
 
 
-        sliderPos = (25 , 75)
-        sliderSize = consoleSize*.7
+        sliderAreaOrigin = (20 , 30)
+        sliderAreaHeight = consoleSize[1]*.9
 
         #Slider's "voltage" will control VCOs (oscillators) of the overtones
-        self.slider = Slider(sliderPos, sliderSize, self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
+        self.slider = SliderArea(sliderAreaOrigin, sliderAreaHeight, self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
 
         self.ratioDisp = RatioDisp()
 
@@ -87,22 +87,22 @@ class Console:
     def draw(self, targetSurf):
         self.surf.fill(self.baseColor)
 
-        pygame.draw.rect(self.surf, self.secColor, (self.screen.position - (50,15), (self.screen.size[0]+100,self.screen.size[1]+60)), border_radius=5, border_bottom_right_radius=40)
+        pygame.draw.rect(self.surf, self.secColor, (self.screen.origin - (50,15), (self.screen.size[0]+100,self.screen.size[1]+60)), border_radius=5, border_bottom_right_radius=40)
         self.screen.draw(self.surf)
 
         self.slider.draw(self.surf)
         for radio in self.radios: radio.draw(self.surf)
 
-        targetSurf.blit(self.surf, self.position)
+        targetSurf.blit(self.surf, self.origin)
 
 
 
 class Screen:
-    def __init__(self, position, size, color, startHz):
+    def __init__(self, origin, size, color, startHz):
         self.size = size
         self.surf = pygame.Surface(size)
 
-        self.position = position
+        self.origin = origin
         self.color = color
 
 
@@ -136,21 +136,15 @@ class Screen:
 
             if overtone.active: overtone.poly.ball.draw(self.surf)
 
-        targetSurf.blit(self.surf, self.position)
+        targetSurf.blit(self.surf, self.origin)
 
 
-class Slider:
-    def __init__(self, position, size, overtones, color, labels, displayBoxes, digitalFont, digitalCol):
+class SliderArea:
+    def __init__(self, origin, height, overtones, color, labels, displayBoxes, digitalFont, digitalCol):
         self.overtones = overtones
 
-        self.position = position
-        self.size = size
-
-        self.miny = self.position[1]
-        self.maxy = self.miny + self.size[1]
-
-
-        self.sliderPos = pygame.Vector2(125, self.maxy-.25*(self.maxy-self.miny))
+        self.origin = origin
+        self.height = height
 
         self.color = color
 
@@ -168,31 +162,47 @@ class Slider:
         self.HzDisp = digitalFont.render(" " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " ", False, self.digitalCol)
         self.BPM_Disp = digitalFont.render(" " + f'{self.overtones[0].Hz * 60:06.0f}'.replace("1", " 1") + " ", False, self.digitalCol)
 
+
+    
+        self.verticalBuf = 35
+
+        self.sliderMiny = self.origin[1] + self.HzBox.get_height() + self.verticalBuf
+        self.sliderMaxy = self.origin[1] + self.height - self.BPM_Box.get_height() - self.verticalBuf
+        
+        self.labelsWidth = max([label.get_width() for label in labels])
+        self.horizontalBuf = 20
+        sliderOffset = self.origin[0] + max(self.labelsWidth, self.BPM_Box.get_width()) + self.horizontalBuf
+        sliderStart = .25        #slider knob starts at this fraction of the slider range
+
+        self.sliderPos = pygame.Vector2(sliderOffset, self.sliderMaxy-sliderStart*(self.sliderMaxy-self.sliderMiny))
+
                 
 
     def draw(self, surface):
-        if TYPESET: pygame.draw.rect(surface, (0,0,0), (self.position, self.size), 1)
+        if TYPESET: pygame.draw.rect(surface, (0,0,0), (self.origin, (self.HzBox.get_width() + self.horizontalBuf + self.BPM_Label.get_width(), self.height)), 1)
 
-        pygame.draw.line(surface, (150,150,150), (self.sliderPos[0], self.miny), (self.sliderPos[0], self.maxy), width=2) #slider track visualized
+        sliderRutCol = (150,150,150)
+        pygame.draw.line(surface, sliderRutCol, (self.sliderPos[0], self.sliderMiny), (self.sliderPos[0], self.sliderMaxy), width=2) #slider track visualized
+        sliderWidth = 10
         pygame.draw.circle(surface, self.color, self.sliderPos, 10)   #slider handle
 
-        surface.blit(self.HzBox, (self.position[0], self.miny-50))
-        surface.blit(self.HzDisp, (self.position[0], self.miny-50))
-        surface.blit(self.HzLabel, (self.position[0]+self.HzBox.get_width()+10,self.miny-45))
+        surface.blit(self.HzBox, (self.origin[0], self.origin[1]))
+        surface.blit(self.HzDisp, (self.origin[0], self.origin[1]))
+        surface.blit(self.HzLabel, (self.origin[0]+self.HzBox.get_width()+self.horizontalBuf,self.origin[1]))
 
         
         for i, label in enumerate(self.labels):
-            surface.blit(label, (25, (self.maxy - label.get_height()/2) - (i/4)*(self.maxy - self.miny))) 
+            surface.blit(label, (self.sliderPos[0] - sliderWidth - self.horizontalBuf - label.get_width(), (self.sliderMaxy - label.get_height()/2) - (i/4)*(self.sliderMaxy - self.sliderMiny))) 
 
-        surface.blit(self.BPM_Box, (self.position[0], self.maxy+20))
-        surface.blit(self.BPM_Disp, (self.position[0], self.maxy+20))
-        surface.blit(self.BPM_Label, (self.position[0]+self.BPM_Box.get_width()+10,self.maxy+25))
+        surface.blit(self.BPM_Box, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
+        surface.blit(self.BPM_Disp, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
+        surface.blit(self.BPM_Label, (self.origin[0]+self.BPM_Box.get_width()+self.horizontalBuf,self.origin[1] + self.height - self.BPM_Box.get_height()))
 
 
 
     def updateVolt(self, sliderSelected, beat_offset, clock):  #slider's position/"voltage" affects VCOs' Hz. Use clock to find phase
 
-        HzScale = abs(self.sliderPos[1] - self.maxy)/(self.maxy - self.miny)
+        HzScale = abs(self.sliderPos[1] - self.sliderMaxy)/(self.sliderMaxy - self.sliderMiny)
 
         if HzScale <= .25:
             Hz = HzScale/.25                                                    #Up to quarter of the way, linear scales up to 1Hz=60bpm
@@ -465,9 +475,9 @@ class main:
 
     Hz =  1
 
-    consolePos = (0,0)
+    consoleOrigin = (0,0)
     consoleSize = windowSize
-    console = Console(consolePos, consoleSize, Hz)
+    console = Console(consoleOrigin, consoleSize, Hz)
 
     overtones = console.overtones
     slider = console.slider
@@ -520,8 +530,8 @@ class main:
             
             elif (event.type == pygame.MOUSEMOTION):
                 if sliderSelected:                              #update slider position (but don't affect anything until mouse released)
-                    y = min(event.pos[1], slider.maxy - offset_y)
-                    y = max(y, slider.miny - offset_y)
+                    y = min(event.pos[1], slider.sliderMaxy - offset_y)
+                    y = max(y, slider.sliderMiny - offset_y)
 
                     slider.sliderPos[1] = offset_y + y
 
