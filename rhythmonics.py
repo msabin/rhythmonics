@@ -7,45 +7,39 @@ import numpy as np
 
 CONSOLE_WIDTH = 900
 CONSOLE_HEIGHT = 500
-CONSOLE_MIN = min(CONSOLE_WIDTH, CONSOLE_HEIGHT)
-CONSOLE_CENTER = pygame.Vector2(CONSOLE_WIDTH/2, CONSOLE_HEIGHT/2)
-
-CONSOLE_ORIGIN =(0,0)
-
-
-SCREEN_WIDTH = 425
-SCREEN_HEIGHT = 350
-
-SCREEN_COLOR = (112, 198, 169)
-SCREEN_CENTER = pygame.Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
-
-SCREEN_ORIGIN = CONSOLE_CENTER - SCREEN_CENTER - (0,20)
 
 
 NUM_OVERTONES = 7
-
-
-
 
 BALL_RADIUS = 7
 
 
 SMOOTH_SLIDE = True
+TYPESET = False
 
 
 
 
 class Console:
-    def __init__(self, consoleSize, startHz):
-        self.surf = pygame.Surface(consoleSize)
+    def __init__(self, position, size, startHz):
+        self.surf = pygame.Surface(size)
 
-        self.baseColor = (0xff,0xbc,0xcf) #(169,193,255)
+        self.position = position
+
+        self.baseColor = (0xff,0xb3,0xc6) #(169,193,255)
         self.secColor = (0,0x97,0x94)
 
+        consoleSize = pygame.Vector2(size)
 
-        screenSize = ((425/900)*consoleSize[0], (350/500)*consoleSize[1])
+
+        screenSize = ((425/900)*size[0], (350/500)*size[1])
+
+        screenCenter = pygame.Vector2(screenSize[0]/2, screenSize[1]/2)
+        consoleCenter = consoleSize/2
+        screenPos = consoleCenter - screenCenter - (0,20)
+
         screenColor = (112, 198, 169)
-        self.screen = Screen(screenSize, screenColor, startHz)
+        self.screen = Screen(screenPos, screenSize, screenColor, startHz)
 
         self.overtones = self.screen.overtones
 
@@ -77,8 +71,11 @@ class Console:
         displayBoxes = [HzBox, BPM_Box]
 
 
+        sliderPos = (25 , 75)
+        sliderSize = consoleSize*.7
+
         #Slider's "voltage" will control VCOs (oscillators) of the overtones
-        self.slider = Slider(self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
+        self.slider = Slider(sliderPos, sliderSize, self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
 
         self.ratioDisp = RatioDisp()
 
@@ -90,23 +87,24 @@ class Console:
     def draw(self, targetSurf):
         self.surf.fill(self.baseColor)
 
-        pygame.draw.rect(self.surf, self.secColor, (SCREEN_ORIGIN - (50,15), (SCREEN_WIDTH+100,SCREEN_HEIGHT+60)), border_radius=5, border_bottom_right_radius=40)
-        #self.screen.draw(self.surf)
+        pygame.draw.rect(self.surf, self.secColor, (self.screen.position - (50,15), (self.screen.size[0]+100,self.screen.size[1]+60)), border_radius=5, border_bottom_right_radius=40)
+        self.screen.draw(self.surf)
 
         self.slider.draw(self.surf)
         for radio in self.radios: radio.draw(self.surf)
 
-        targetSurf.blit(self.surf, CONSOLE_ORIGIN)
+        targetSurf.blit(self.surf, self.position)
 
 
 
 class Screen:
-    def __init__(self, size, color, startHz):
+    def __init__(self, position, size, color, startHz):
+        self.size = size
         self.surf = pygame.Surface(size)
 
+        self.position = position
         self.color = color
 
-        center = pygame.Vector2(size[0]/2, size[1]/2)
 
         #Handcraft polygon aesthetics for the screen
         rootColor = (237,199,176)
@@ -115,6 +113,7 @@ class Screen:
         seventhColor = (139,72,82)
         
         rootRadius = (.9 * min(size[0], size[1]))/2
+        center = pygame.Vector2(size[0]/2, size[1]/2)
         
 
         root1 = Polygon(1,rootRadius, center, rootColor, isPointy=False)
@@ -137,15 +136,18 @@ class Screen:
 
             if overtone.active: overtone.poly.ball.draw(self.surf)
 
-        targetSurf.blit(self.surf, SCREEN_ORIGIN)
+        targetSurf.blit(self.surf, self.position)
 
 
 class Slider:
-    def __init__(self, overtones, color, labels, displayBoxes, digitalFont, digitalCol):
+    def __init__(self, position, size, overtones, color, labels, displayBoxes, digitalFont, digitalCol):
         self.overtones = overtones
 
-        self.miny = 75
-        self.maxy = CONSOLE_HEIGHT-self.miny
+        self.position = position
+        self.size = size
+
+        self.miny = self.position[1]
+        self.maxy = self.miny + self.size[1]
 
 
         self.sliderPos = pygame.Vector2(125, self.maxy-.25*(self.maxy-self.miny))
@@ -166,26 +168,25 @@ class Slider:
         self.HzDisp = digitalFont.render(" " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " ", False, self.digitalCol)
         self.BPM_Disp = digitalFont.render(" " + f'{self.overtones[0].Hz * 60:06.0f}'.replace("1", " 1") + " ", False, self.digitalCol)
 
-
-
-
                 
 
     def draw(self, surface):
+        if TYPESET: pygame.draw.rect(surface, (0,0,0), (self.position, self.size), 1)
+
         pygame.draw.line(surface, (150,150,150), (self.sliderPos[0], self.miny), (self.sliderPos[0], self.maxy), width=2) #slider track visualized
         pygame.draw.circle(surface, self.color, self.sliderPos, 10)   #slider handle
 
-        surface.blit(self.HzBox, (25, self.miny-50))
-        surface.blit(self.HzDisp, (25, self.miny-50))
-        surface.blit(self.HzLabel, (25+self.HzBox.get_width()+10,self.miny-45))
+        surface.blit(self.HzBox, (self.position[0], self.miny-50))
+        surface.blit(self.HzDisp, (self.position[0], self.miny-50))
+        surface.blit(self.HzLabel, (self.position[0]+self.HzBox.get_width()+10,self.miny-45))
 
         
         for i, label in enumerate(self.labels):
             surface.blit(label, (25, (self.maxy - label.get_height()/2) - (i/4)*(self.maxy - self.miny))) 
 
-        surface.blit(self.BPM_Box, (25, self.maxy+20))
-        surface.blit(self.BPM_Disp, (25, self.maxy+20))
-        surface.blit(self.BPM_Label, (25+self.BPM_Box.get_width()+10,self.maxy+25))
+        surface.blit(self.BPM_Box, (self.position[0], self.maxy+20))
+        surface.blit(self.BPM_Disp, (self.position[0], self.maxy+20))
+        surface.blit(self.BPM_Label, (self.position[0]+self.BPM_Box.get_width()+10,self.maxy+25))
 
 
 
@@ -254,7 +255,7 @@ class RadioBtn:
         self.color = color
 
     def draw(self, surface):
-        pygame.draw.circle(surface, SCREEN_COLOR, self.pos, 8, 3)
+        pygame.draw.circle(surface, (255,255,255), self.pos, 6, 1)
 
         pygame.draw.circle(surface, self.color, self.pos, 5)
 
@@ -464,8 +465,9 @@ class main:
 
     Hz =  1
 
+    consolePos = (0,0)
     consoleSize = windowSize
-    console = Console(consoleSize, Hz)
+    console = Console(consolePos, consoleSize, Hz)
 
     overtones = console.overtones
     slider = console.slider
