@@ -59,13 +59,11 @@ class Console:
         labelsFont = pygame.font.Font('Menlo.ttc', labelsFontSize)
         labelsCol = (0,0,0) #(76,100,161)
 
-
         labels = [labelsFont.render('Hz', True, labelsCol), labelsFont.render('BPM', True, labelsCol), 
                   labelsFont.render('FREEZE', True, labelsCol), labelsFont.render('GROOVE', True, labelsCol), 
                   labelsFont.render('CHAOS', True, labelsCol), labelsFont.render('HARMONY', True, labelsCol), 
                   labelsFont.render('EEEEEE', True, labelsCol)]
         
-
 
         digitalFontSize = 30
         digitalFont = pygame.font.Font('digital-7 (mono).ttf', digitalFontSize)
@@ -92,7 +90,7 @@ class Console:
     def draw(self, targetSurf):
         self.surf.fill(self.baseColor)
 
-        pygame.draw.rect(self.surf, self.secColor, (SCREEN_ORIGIN - (50,15), (SCREEN_WIDTH+100,SCREEN_HEIGHT+70)), border_radius=5, border_bottom_right_radius=40)
+        pygame.draw.rect(self.surf, self.secColor, (SCREEN_ORIGIN - (50,15), (SCREEN_WIDTH+100,SCREEN_HEIGHT+60)), border_radius=5, border_bottom_right_radius=40)
         #self.screen.draw(self.surf)
 
         self.slider.draw(self.surf)
