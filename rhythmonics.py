@@ -32,11 +32,11 @@ class Console:
         consoleSize = pygame.Vector2(size)
 
 
-        screenSize = ((425/900)*size[0], (350/500)*size[1])
+        screenSize = ((425/1000)*size[0], (350/600)*size[1])
 
         screenCenter = pygame.Vector2(screenSize[0]/2, screenSize[1]/2)
         consoleCenter = consoleSize/2
-        screenOrigin = consoleCenter - screenCenter - (0,20)
+        screenOrigin = consoleCenter - screenCenter - (0,40)
 
         screenColor = (112, 198, 169)
         self.screen = Screen(screenOrigin, screenSize, screenColor, startHz)
@@ -63,21 +63,29 @@ class Console:
         digitalFont = pygame.font.Font('digital-7 (mono).ttf', digitalFontSize)
 
         digitalOn = (0,0xcf,0xdd)
-        digitialOff = (0,0x52,0x60)
-        digitialBG = (0,0x35,0x55)
+        digitalOff = (0,0x52,0x60)
+        digitalBG = (0,0x35,0x55)
 
-        HzBox = digitalFont.render(' 8888.88 ', False, digitialOff, digitialBG)  #digital box to print Hz on
-        BPM_Box = digitalFont.render(' 888888 ', False, digitialOff, digitialBG)
+        HzBox = digitalFont.render(' 8888.88 ', False, digitalOff, digitalBG)  #digital box to print Hz on
+        BPM_Box = digitalFont.render(' 888888 ', False, digitalOff, digitalBG)
         displayBoxes = [HzBox, BPM_Box]
 
 
-        sliderAreaOrigin = (25 , 30)
+        sliderAreaOrigin = (35 , 30)
         sliderAreaHeight = consoleSize[1]*.9
 
         #Slider's "voltage" will control VCOs (oscillators) of the overtones
         self.slider = SliderArea(sliderAreaOrigin, sliderAreaHeight, self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
 
-        self.ratioDisp = RatioDisp()
+
+
+        ratioOrigin = screenOrigin + (100, screenSize[1] + 90)
+        #ratioLength = screenSize[0]-40
+
+        digitalSlot = digitalFont.render(f'8', False, digitalOff, digitalBG)
+        ratioColon = labelsFont.render(':', False, labelsCol)
+
+        self.ratioDisp = RatioDisp(ratioOrigin, self.overtones, digitalSlot, digitalFont, digitalOn, ratioColon)
 
 
         
@@ -87,11 +95,13 @@ class Console:
     def draw(self, targetSurf):
         self.surf.fill(self.baseColor)
 
-        pygame.draw.rect(self.surf, self.secColor, (self.screen.origin - (50,15), (self.screen.size[0]+100,self.screen.size[1]+60)), border_radius=5, border_bottom_right_radius=40)
+        pygame.draw.rect(self.surf, self.secColor, (self.screen.origin - (55,25), (self.screen.size[0]+105,self.screen.size[1]+85)), border_radius=5, border_bottom_right_radius=40)
         self.screen.draw(self.surf)
 
         self.slider.draw(self.surf)
         for radio in self.radios: radio.draw(self.surf)
+
+        self.ratioDisp.draw(self.surf)
 
         targetSurf.blit(self.surf, self.origin)
 
@@ -166,7 +176,7 @@ class SliderArea:
 
 
     
-        self.verticalBuf = 35
+        self.verticalBuf = 30
 
         self.sliderMiny = self.origin[1] + self.HzBox.get_height() + self.verticalBuf
         self.sliderMaxy = self.origin[1] + self.height - self.BPM_Box.get_height() - self.verticalBuf
@@ -272,8 +282,27 @@ class RadioBtn:
 
 
 class RatioDisp:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, origin, overtones, digitalSlot, digitalFont, digitalCol, ratioColon):
+        self.origin = origin
+        self.overtones = overtones
+        self.digitalFont = digitalFont
+        self.digitalCol = digitalCol
+        self.digitalSlot = digitalSlot
+        self.ratioColon = ratioColon
+        self.horizontalBuf = 4
+
+    def draw(self, surface):
+        #if TYPESET: pygame.draw.rect(surface, (0,0,0), (self.origin, (self.length, self.digitalSlots[0].get_height())), 1)
+        offset = self.digitalSlot.get_width() + self.horizontalBuf + self.ratioColon.get_width() + self.horizontalBuf
+        for i, overtone in enumerate(self.overtones):
+            surface.blit(self.digitalSlot, (self.origin[0] + offset*i, self.origin[1]))
+            if overtone.active:
+                ratioDisp = self.digitalFont.render(f'{overtone.overtone}'.replace("1", " 1"), False, self.digitalCol)
+                surface.blit(ratioDisp, (self.origin[0] + offset*i, self.origin[1]))
+
+            if overtone != self.overtones[-1]:
+                surface.blit(self.ratioColon, (self.origin[0] + offset*i + self.digitalSlot.get_width() + self.horizontalBuf, self.origin[1]))
+
 
 
 
@@ -471,7 +500,7 @@ class main:
     pygame.mouse.set_cursor(pygame.cursors.tri_left)
     #dispaySize = pygame.display.get_desktop_sizes()
 
-    windowSize = (900, 500)
+    windowSize = (1000, 600)
     window = pygame.display.set_mode(windowSize)
 
     Hz =  1
@@ -488,20 +517,23 @@ class main:
     polys = screen.polys
     balls = [poly.ball for poly in polys]
 
+
+
     
-    
+    overtones[0].active = True
+    overtones[0].oscillator.set_volume(1)
 
     console.draw(window)
+
+
+
 
     clock = pygame.time.Clock()
     clock.tick()
 
     for overtone in overtones: overtone.oscillator.play(loops=-1)
 
-    overtones[0].active = True
-    overtones[0].oscillator.set_volume(1)
 
-    
     user_done = False
     sliderSelected = False
 
@@ -527,6 +559,7 @@ class main:
                             if (math.dist(overtone.radio.pos, event.pos) <= 5):  #if one of the overtones' radio buttons is clicked, toggle it on/off
 
                                 overtone.setActive(not overtone.active)
+                                console.draw(window)
 
             
             elif (event.type == pygame.MOUSEMOTION):
