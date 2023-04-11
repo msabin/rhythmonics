@@ -32,11 +32,11 @@ class Console:
         consoleSize = pygame.Vector2(size)
 
 
-        screenSize = ((425/1000)*size[0], (350/600)*size[1])
+        screenSize = (425, 350)
 
         screenCenter = pygame.Vector2(screenSize[0]/2, screenSize[1]/2)
         consoleCenter = consoleSize/2
-        screenOrigin = consoleCenter - screenCenter - (0,40)
+        screenOrigin = consoleCenter - screenCenter - (0,35)
 
         screenColor = (112, 198, 169)
         self.screen = Screen(screenOrigin, screenSize, screenColor, startHz)
@@ -71,15 +71,15 @@ class Console:
         displayBoxes = [HzBox, BPM_Box]
 
 
-        sliderAreaOrigin = (35 , 30)
-        sliderAreaHeight = consoleSize[1]*.9
+        sliderAreaOrigin = (35 , 35)
+        sliderAreaHeight = consoleSize[1]*.875
 
         #Slider's "voltage" will control VCOs (oscillators) of the overtones
         self.slider = SliderArea(sliderAreaOrigin, sliderAreaHeight, self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
 
 
 
-        ratioOrigin = screenOrigin + (100, screenSize[1] + 90)
+        ratioOrigin = screenOrigin + (108, screenSize[1] + 80)
         #ratioLength = screenSize[0]-40
 
         digitalSlot = digitalFont.render(f'8', False, digitalOff, digitalBG)
@@ -95,7 +95,7 @@ class Console:
     def draw(self, targetSurf):
         self.surf.fill(self.baseColor)
 
-        pygame.draw.rect(self.surf, self.secColor, (self.screen.origin - (55,25), (self.screen.size[0]+105,self.screen.size[1]+85)), border_radius=5, border_bottom_right_radius=40)
+        pygame.draw.rect(self.surf, self.secColor, (self.screen.origin - (45,25), (self.screen.size[0]+90,self.screen.size[1]+75)), border_radius=5, border_bottom_right_radius=40)
         self.screen.draw(self.surf)
 
         self.slider.draw(self.surf)
@@ -270,7 +270,7 @@ class RadioBtn:
         miny = 75
         maxy = CONSOLE_HEIGHT-miny
 
-        self.pos = pygame.Vector2(CONSOLE_WIDTH - 140, miny + (num-1)*(maxy-miny)/6)
+        self.pos = pygame.Vector2(CONSOLE_WIDTH - 100, miny + (num-1)*(maxy-miny)/6)
 
 
         self.color = color
@@ -500,7 +500,7 @@ class main:
     pygame.mouse.set_cursor(pygame.cursors.tri_left)
     #dispaySize = pygame.display.get_desktop_sizes()
 
-    windowSize = (1000, 600)
+    windowSize = (1000, 560)
     window = pygame.display.set_mode(windowSize)
 
     Hz =  1
