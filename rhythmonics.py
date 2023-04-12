@@ -3,6 +3,12 @@ import math
 import numpy as np
 
 
+
+#Could create slider object as apart from sliderArea
+#Could create radioBtn object that isn't the whole radio buttons area
+#Could create displayBox area that SliderArea and RatioDisp instantiates some chunks of
+
+
 # CONSTANTS
 
 CONSOLE_WIDTH = 900
@@ -26,7 +32,7 @@ class Console:
 
         self.origin = origin
 
-        self.baseColor = (0xff,0xb3,0xc6) #(169,193,255)
+        self.baseColor = (0xff,0xbc,0xcf) #(169,193,255)
         self.secColor = (0,0x97,0x94)
 
         consoleSize = pygame.Vector2(size)
@@ -63,7 +69,7 @@ class Console:
         digitalFont = pygame.font.Font('digital-7 (mono).ttf', digitalFontSize)
 
         digitalOn = (0,0xcf,0xdd)
-        digitalOff = (0,0x52,0x60)
+        digitalOff = (0,0x55,0x63)
         digitalBG = (0,0x35,0x55)
 
         HzBox = digitalFont.render(' 8888.88 ', False, digitalOff, digitalBG)  #digital box to print Hz on
@@ -120,7 +126,7 @@ class Screen:
         rootColor = (237,199,176)
         thirdColor = (118,150,222)
         fifthColor = (255,151,152)
-        seventhColor = (139,72,82)
+        seventhColor = (171,103,114)
         
         rootRadius = (.9 * min(size[0], size[1]))/2
         center = pygame.Vector2(size[0]/2, size[1]/2)
@@ -142,9 +148,20 @@ class Screen:
         self.surf.fill(self.color)
 
         for overtone in self.overtones: 
-            overtone.poly.draw(self.surf)
+            poly = overtone.poly
 
-            if overtone.active: overtone.poly.ball.draw(self.surf)
+            poly.draw(self.surf)
+
+            #if polygon is actually a circle, then draw tick marks to indicate where ball will make a click sound when it passed it
+            if not poly.isPointy: 
+                tickLength = 5
+                for i, vert in enumerate(poly.verts):
+                    xTick = math.cos(math.pi/2 - 2*math.pi * i/len(poly.verts))*tickLength
+                    yTick = math.sin(math.pi/2 - 2*math.pi * i/len(poly.verts))*tickLength
+                    pygame.draw.line(self.surf, (139,72,82), vert - (xTick , -yTick), vert + (xTick, -yTick), 2)
+
+
+            if overtone.active: poly.ball.draw(self.surf)
 
         targetSurf.blit(self.surf, self.origin)
 
@@ -270,15 +287,32 @@ class RadioBtn:
         miny = 75
         maxy = CONSOLE_HEIGHT-miny
 
-        self.pos = pygame.Vector2(CONSOLE_WIDTH - 100, miny + (num-1)*(maxy-miny)/6)
+        self.num = num
+
+        self.pos = pygame.Vector2(CONSOLE_WIDTH - 95, miny + (self.num-1)*(maxy-miny)/6)
 
 
         self.color = color
 
     def draw(self, surface):
-        pygame.draw.circle(surface, (255,255,255), self.pos, 6, 1)
+        pygame.draw.circle(surface, (0,0x79,0x87), self.pos, 7, 2)
 
         pygame.draw.circle(surface, self.color, self.pos, 5)
+
+        #for i in range(self.waveLength):
+        #    pygame.draw.circle(surface, (0, 0, 0), self.pos + (20 + i, -10*math.sin(2*math.pi * i/self.waveLength * self.num/2)), 1)
+
+
+        
+        sampleRate =55
+        pxlLength = 125
+        offset = self.pos+(20,0)
+        sine = [((i/sampleRate)*pxlLength + offset[0], -10*math.sin(2*math.pi * i/sampleRate * self.num/2) + offset[1]) for i in range(sampleRate)]
+
+        pygame.draw.aalines(surface, (0,0,0), False, sine)
+
+        
+
 
 
 class RatioDisp:
@@ -580,7 +614,7 @@ class main:
 
                     sliderSelected = False                    #unselect slider and then update slider's affect on Hz
 
-                    #if not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
+                    if not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
 
             
 
