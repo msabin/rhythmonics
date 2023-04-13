@@ -81,7 +81,7 @@ class Console:
         sliderAreaHeight = consoleSize[1]*.875
 
         #Slider's "voltage" will control VCOs (oscillators) of the overtones
-        self.slider = SliderArea(sliderAreaOrigin, sliderAreaHeight, self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
+        self.sliderArea = SliderArea(sliderAreaOrigin, sliderAreaHeight, self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
 
 
 
@@ -94,17 +94,13 @@ class Console:
         self.ratioDisp = RatioDisp(ratioOrigin, self.overtones, digitalSlot, digitalFont, digitalOn, ratioColon)
 
 
-        
-
-        
-
     def draw(self, targetSurf):
         self.surf.fill(self.baseColor)
 
         pygame.draw.rect(self.surf, self.secColor, (self.screen.origin - (45,25), (self.screen.size[0]+90,self.screen.size[1]+75)), border_radius=5, border_bottom_right_radius=40)
         self.screen.draw(self.surf)
 
-        self.slider.draw(self.surf)
+        self.sliderArea.draw(self.surf)
         for radio in self.radios: radio.draw(self.surf)
 
         self.ratioDisp.draw(self.surf)
@@ -186,54 +182,74 @@ class SliderArea:
 
         self.digitalFont = digitalFont
         self.digitalCol = digitalCol
-        self.HzDisp = digitalFont.render(" " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " ", False, self.digitalCol)
-        self.BPM_Disp = digitalFont.render(" " + f'{self.overtones[0].Hz * 60:06.0f}'.replace("1", " 1") + " ", False, self.digitalCol)
 
 
-    
-        self.sliderSize = pygame.math.Vector2(20,40) #size of rectangular slider handle
-
-        self.verticalBuf = 30
-
-        self.sliderMiny = self.origin[1] + self.HzBox.get_height() + self.verticalBuf
-        self.sliderMaxy = self.origin[1] + self.height - self.BPM_Box.get_height() - self.verticalBuf
-        
-        self.labelsWidth = max([label.get_width() for label in labels])
         self.horizontalBuf = 20
-        sliderOffset = self.origin[0] + self.labelsWidth + self.horizontalBuf + self.sliderSize[0]
+    
+        sliderSize = pygame.math.Vector2(20,40) #size of rectangular slider handle
+
+        verticalBuf = 30
+        sliderMiny = self.origin[1] + self.HzBox.get_height() + verticalBuf
+        sliderMaxy = self.origin[1] + self.height - self.BPM_Box.get_height() - verticalBuf
+        
+        labelsWidth = max([label.get_width() for label in labels])
+        sliderOffset = self.origin[0] + labelsWidth + self.horizontalBuf + sliderSize[0]
         sliderStart = .25        #slider knob starts at this fraction of the slider range
 
-        self.sliderPos = pygame.Vector2(sliderOffset, self.sliderMaxy-sliderStart*(self.sliderMaxy-self.sliderMiny))
+        sliderPos = pygame.Vector2(sliderOffset, sliderMaxy-sliderStart*(sliderMaxy-sliderMiny))
 
-        self.sliderHandle = pygame.Rect(self.sliderPos - self.sliderSize/2, self.sliderSize)
+
+        self.slider = Slider(sliderPos, sliderSize, self.overtones, sliderMiny, sliderMaxy)
 
                 
 
     def draw(self, surface):
         if TYPESET: pygame.draw.rect(surface, (0,0,0), (self.origin, (self.HzBox.get_width() + self.horizontalBuf + self.BPM_Label.get_width(), self.height)), 1)
 
+        #draw slider groove and slider
         sliderRutCol = (150,150,150)
-        pygame.draw.line(surface, sliderRutCol, (self.sliderPos[0], self.sliderMiny), (self.sliderPos[0], self.sliderMaxy), width=2) #slider track visualized
-        #pygame.draw.circle(surface, self.color, self.sliderPos, 10)   #slider handle
-        pygame.draw.rect(surface, self.color, self.sliderHandle)
+        pygame.draw.line(surface, sliderRutCol, (self.slider.pos[0], self.slider.miny), (self.slider.pos[0], self.slider.maxy), width=2) #slider track visualized
+        self.slider.handle = pygame.Rect(self.slider.pos - self.slider.size/2, self.slider.size)
+        pygame.draw.rect(surface, self.color, self.slider.handle)
 
+        #Draw Hz display
         surface.blit(self.HzBox, (self.origin[0], self.origin[1]))
-        surface.blit(self.HzDisp, (self.origin[0], self.origin[1]))
+
+        HzDisp = self.digitalFont.render(" " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " ", False, self.digitalCol)
+        surface.blit(HzDisp, (self.origin[0], self.origin[1]))
+
         surface.blit(self.HzLabel, (self.origin[0]+self.HzBox.get_width()+self.horizontalBuf/2,self.origin[1]))
 
-        
+        #Draw slider labels
         for i, label in enumerate(self.labels):
-            surface.blit(label, (self.sliderPos[0] - self.sliderSize[0] - self.horizontalBuf - label.get_width(), (self.sliderMaxy - label.get_height()/2) - (i/4)*(self.sliderMaxy - self.sliderMiny))) 
+            surface.blit(label, (self.slider.pos[0] - self.slider.size[0] - self.horizontalBuf - label.get_width(), (self.slider.maxy - label.get_height()/2) - (i/4)*(self.slider.maxy - self.slider.miny))) 
 
+        #Draw BPM display
         surface.blit(self.BPM_Box, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
-        surface.blit(self.BPM_Disp, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
+
+        BPM_Disp = self.digitalFont.render(" " + f'{self.overtones[0].Hz * 60:06.0f}'.replace("1", " 1") + " ", False, self.digitalCol)
+        surface.blit(BPM_Disp, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
+
         surface.blit(self.BPM_Label, (self.origin[0]+self.BPM_Box.get_width()+self.horizontalBuf/2,self.origin[1] + self.height - self.BPM_Box.get_height()))
 
 
+class Slider:
+    def __init__(self, position, size, overtones, miny, maxy):
+        self.pos = position
+        self.size = size
 
-    def updateVolt(self, sliderSelected, beat_offset, clock):  #slider's position/"voltage" affects VCOs' Hz. Use clock to find phase
+        self.overtones = overtones
 
-        HzScale = abs(self.sliderPos[1] - self.sliderMaxy)/(self.sliderMaxy - self.sliderMiny)
+        self.miny = miny
+        self.maxy = maxy
+
+        self.isSelected = False
+
+        self.handle = pygame.Rect(self.pos - self.size/2, self.size)
+
+    def updateVolt(self, beat_offset, clock):  #slider's position/"voltage" affects VCOs' Hz. Use clock to find phase
+
+        HzScale = abs(self.pos[1] - self.maxy)/(self.maxy - self.miny)
 
         if HzScale <= .25:
             Hz = HzScale/.25                                                    #Up to quarter of the way, linear scales up to 1Hz=60bpm
@@ -244,19 +260,12 @@ class SliderArea:
             Hz = 275/60 + (110-275/60)*math.log(1 + (HzScale - .5)/.25, 2)  #log scales up to 110Hz (4th harmonic/2nd octave will be 440Hz)    
         else:   
             Hz = 110 + (2000-110)*math.log(1 + (HzScale - .75)/.25, 2)        #caps at 2000 Hz (seventh harmonic will be at 14000Hz)
-
-
-        hzStr = " " + f'{Hz:07.2f}'.replace("1", " 1") + " "
-        self.HzDisp = self.digitalFont.render(hzStr, False, self.digitalCol)
-
-        bpmStr = " " + f'{Hz*60:06.0f}'.replace("1", " 1") + " "
-        self.BPM_Disp = self.digitalFont.render(bpmStr, False, self.digitalCol)
-
+            
 
 
         ms_per_beat = 1000/self.overtones[0].Hz #Keep ms_per_beat based on fundamental freq unless slider is not selected and we update fundamental Hz
 
-        if SMOOTH_SLIDE or (not sliderSelected):  #if slider isn't selected we *now* update the VCOs
+        if SMOOTH_SLIDE or (not self.isSelected):  #if slider isn't selected we *now* update the VCOs
         
             if Hz == 0: 
                 ms_per_beat = 0
@@ -337,9 +346,6 @@ class RadioBtn:
             if not SMOOTH_SLIDE: self.overtone.oscillator.set_volume(1)
         else:
             self.overtone.oscillator.set_volume(0)
-
-        
-
 
 
 class RatioDisp:
@@ -561,7 +567,7 @@ class main:
     console = Console(consoleOrigin, consoleSize, Hz)
 
     overtones = console.overtones
-    slider = console.slider
+    slider = console.sliderArea.slider
     radios = console.radios
     screen = console.screen
 
@@ -585,7 +591,6 @@ class main:
 
 
     user_done = False
-    sliderSelected = False
 
     ms_per_beat = 1000/Hz #how many milliseconds in a beat
     beat_offset = 0
@@ -599,10 +604,10 @@ class main:
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    if slider.sliderHandle.collidepoint(event.pos):
-                        sliderSelected = True
+                    if slider.handle.collidepoint(event.pos):
+                        slider.isSelected = True
 
-                        offset_y = slider.sliderPos[1] - event.pos[1]
+                        offset_y = slider.pos[1] - event.pos[1]
 
                     else:
                         for overtone in overtones:
@@ -613,25 +618,24 @@ class main:
 
             
             elif (event.type == pygame.MOUSEMOTION):
-                if sliderSelected:                              #update slider position (but don't affect anything until mouse released)
-                    y = min(event.pos[1], slider.sliderMaxy - offset_y)
-                    y = max(y, slider.sliderMiny - offset_y)
+                if slider.isSelected:                              #update slider position (but don't affect anything until mouse released)
+                    y = min(event.pos[1], slider.maxy - offset_y)
+                    y = max(y, slider.miny - offset_y)
 
-                    slider.sliderPos[1] = offset_y + y
-                    slider.sliderHandle = pygame.Rect(slider.sliderPos - slider.sliderSize/2, slider.sliderSize)
+                    slider.pos[1] = offset_y + y
 
-                    (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
+                    (beat_offset, ms_per_beat) = slider.updateVolt(beat_offset, clock)
 
                     console.draw(window)
 
 
 
             elif event.type == pygame.MOUSEBUTTONUP:
-                if (event.button == 1) and sliderSelected:         #update Hz if the slider was selected and now released
+                if (event.button == 1) and slider.isSelected:         #update Hz if the slider was selected and now released
 
-                    sliderSelected = False                    #unselect slider and then update slider's affect on Hz
+                    slider.isSelected = False                    #unselect slider and then update slider's affect on Hz
 
-                    if not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
+                    if not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(beat_offset, clock)
 
             
 
