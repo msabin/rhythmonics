@@ -126,7 +126,7 @@ class Screen:
         rootColor = (237,199,176)
         thirdColor = (118,150,222)
         fifthColor = (255,151,152)
-        seventhColor = (171,103,114)
+        seventhColor = (171,103,114) #(0xb1,0x9c, 0xd8)
         
         rootRadius = (.9 * min(size[0], size[1]))/2
         center = pygame.Vector2(size[0]/2, size[1]/2)
@@ -175,8 +175,6 @@ class SliderArea:
 
         self.color = color
 
-        self.sliderSize = (10,20) #size of rectangular slider handle
-
 
 
         self.HzLabel = labels.pop(0)
@@ -193,6 +191,8 @@ class SliderArea:
 
 
     
+        self.sliderSize = pygame.math.Vector2(20,40) #size of rectangular slider handle
+
         self.verticalBuf = 30
 
         self.sliderMiny = self.origin[1] + self.HzBox.get_height() + self.verticalBuf
@@ -205,6 +205,8 @@ class SliderArea:
 
         self.sliderPos = pygame.Vector2(sliderOffset, self.sliderMaxy-sliderStart*(self.sliderMaxy-self.sliderMiny))
 
+        self.sliderHandle = pygame.Rect(self.sliderPos - self.sliderSize/2, self.sliderSize)
+
                 
 
     def draw(self, surface):
@@ -212,7 +214,8 @@ class SliderArea:
 
         sliderRutCol = (150,150,150)
         pygame.draw.line(surface, sliderRutCol, (self.sliderPos[0], self.sliderMiny), (self.sliderPos[0], self.sliderMaxy), width=2) #slider track visualized
-        pygame.draw.circle(surface, self.color, self.sliderPos, 10)   #slider handle
+        #pygame.draw.circle(surface, self.color, self.sliderPos, 10)   #slider handle
+        pygame.draw.rect(surface, self.color, self.sliderHandle)
 
         surface.blit(self.HzBox, (self.origin[0], self.origin[1]))
         surface.blit(self.HzDisp, (self.origin[0], self.origin[1]))
@@ -283,21 +286,32 @@ class SliderArea:
 
 
 class RadioBtn:
-    def __init__(self, num, color):
+    def __init__(self, overtone, color):
         miny = 75
         maxy = CONSOLE_HEIGHT-miny
 
-        self.num = num
+        self.overtone = overtone
 
-        self.pos = pygame.Vector2(CONSOLE_WIDTH - 95, miny + (self.num-1)*(maxy-miny)/6)
+        self.pos = pygame.Vector2(CONSOLE_WIDTH - 95, miny + (self.overtone.overtone-1)*(maxy-miny)/6)
+
+        self.active = self.overtone.active
 
 
-        self.color = color
+        self.onCol = pygame.Color(color)
+
+        self.offCol = pygame.Color(color)
+        hsva = self.offCol.hsva
+        self.offCol.hsva = (hsva[0], hsva[1], hsva[2] - 30, hsva[3])
+
+
 
     def draw(self, surface):
         pygame.draw.circle(surface, (0,0x79,0x87), self.pos, 7, 2)
 
-        pygame.draw.circle(surface, self.color, self.pos, 5)
+        if self.active: 
+            pygame.draw.circle(surface, self.onCol, self.pos, 5)
+        else:
+            pygame.draw.circle(surface, self.offCol, self.pos, 5)
 
         #for i in range(self.waveLength):
         #    pygame.draw.circle(surface, (0, 0, 0), self.pos + (20 + i, -10*math.sin(2*math.pi * i/self.waveLength * self.num/2)), 1)
@@ -305,11 +319,24 @@ class RadioBtn:
 
         
         sampleRate =55
-        pxlLength = 125
+        pxlLength = 115
         offset = self.pos+(20,0)
-        sine = [((i/sampleRate)*pxlLength + offset[0], -10*math.sin(2*math.pi * i/sampleRate * self.num/2) + offset[1]) for i in range(sampleRate)]
+        sine = [((i/sampleRate)*pxlLength + offset[0], -10*math.sin(2*math.pi * i/sampleRate * self.overtone.overtone/2) + offset[1]) for i in range(sampleRate)]
 
-        pygame.draw.aalines(surface, (0,0,0), False, sine)
+
+        #,digitalOff = (0,0x55,0x63)
+        #digitalBG = (0,0x35,0x55)
+        pygame.draw.aalines(surface, (147,80,90), False, sine) #(139,72,82)
+
+    def updateActive(self, active):
+        self.active = active
+
+        self.overtone.active = self.active
+
+        if active: 
+            if not SMOOTH_SLIDE: self.overtone.oscillator.set_volume(1)
+        else:
+            self.overtone.oscillator.set_volume(0)
 
         
 
@@ -354,9 +381,9 @@ class Overtone:
 
         self.poly = poly
 
-        self.radio = RadioBtn(overtone, poly.color)
-
         self.active = False
+
+        self.radio = RadioBtn(self, poly.color)
 
     def updateHz(self, fundHz, fundPhase):
         self.Hz = fundHz * self.overtone
@@ -366,14 +393,6 @@ class Overtone:
 
         self.oscillator = Oscillator(self.Hz, self.phase)
         if self.active:
-            if not SMOOTH_SLIDE: self.oscillator.set_volume(1)
-        else:
-            self.oscillator.set_volume(0)
-
-    def setActive(self, active):
-        self.active = active
-
-        if active: 
             if not SMOOTH_SLIDE: self.oscillator.set_volume(1)
         else:
             self.oscillator.set_volume(0)
@@ -460,8 +479,6 @@ class Ball:
             k = math.floor(bigSubDiv)     #biggest integer below bigSubDiv is the most recent vertex the ball has left
 
             self.pos = self.poly.verts[k].lerp(self.poly.verts[(k+1)%n], bigSubDiv - k) #interpolate the vertices by normalized sub-division between them
-
-
         else:
             radius = self.poly.radius
             center = self.poly.center
@@ -554,8 +571,7 @@ class main:
 
 
     
-    overtones[0].active = True
-    overtones[0].oscillator.set_volume(1)
+    radios[0].updateActive(True)
 
     console.draw(window)
 
@@ -583,7 +599,7 @@ class main:
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    if math.dist(slider.sliderPos, event.pos) <= 10:
+                    if slider.sliderHandle.collidepoint(event.pos):
                         sliderSelected = True
 
                         offset_y = slider.sliderPos[1] - event.pos[1]
@@ -592,7 +608,7 @@ class main:
                         for overtone in overtones:
                             if (math.dist(overtone.radio.pos, event.pos) <= 5):  #if one of the overtones' radio buttons is clicked, toggle it on/off
 
-                                overtone.setActive(not overtone.active)
+                                overtone.radio.updateActive(not overtone.active)
                                 console.draw(window)
 
             
@@ -602,6 +618,7 @@ class main:
                     y = max(y, slider.sliderMiny - offset_y)
 
                     slider.sliderPos[1] = offset_y + y
+                    slider.sliderHandle = pygame.Rect(slider.sliderPos - slider.sliderSize/2, slider.sliderSize)
 
                     (beat_offset, ms_per_beat) = slider.updateVolt(sliderSelected, beat_offset, clock)
 
