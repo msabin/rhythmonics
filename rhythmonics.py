@@ -5,16 +5,11 @@ import numpy as np
 
 
 # CONSTANTS
-
-
 NUM_OVERTONES = 7
-
 BALL_RADIUS = 7
-
 
 SMOOTH_SLIDE = True
 TYPESET = False
-
 
 
 
@@ -318,10 +313,6 @@ class RadioArea:
             pygame.draw.aalines(surface, (147,80,90), False, sine)
 
 
-    
-        
-
-
 class RadioBtn:
     def __init__(self, position, radius, overtone):
 
@@ -358,8 +349,6 @@ class RadioBtn:
             if not SMOOTH_SLIDE: self.overtone.oscillator.set_volume(1)
         else:
             self.overtone.oscillator.set_volume(0)
-
-
 
 
 class RatioDisp:
@@ -553,9 +542,6 @@ class Tail:
             ball.draw(console)
 
 
-
-
-    
 
 
 
