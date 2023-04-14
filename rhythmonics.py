@@ -4,15 +4,7 @@ import numpy as np
 
 
 
-#Could create slider object as apart from sliderArea
-#Could create radioBtn object that isn't the whole radio buttons area
-#Could create displayBox area that SliderArea and RatioDisp instantiates some chunks of
-
-
 # CONSTANTS
-
-CONSOLE_WIDTH = 900
-CONSOLE_HEIGHT = 500
 
 
 NUM_OVERTONES = 7
@@ -49,7 +41,14 @@ class Console:
 
         self.overtones = self.screen.overtones
 
-        self.radios = [overtone.radio for overtone in self.overtones]
+
+
+        radioAreaOrigin = (805, 75)
+        radioAreaSize = (135 , 350)
+
+        self.radioArea = RadioArea(radioAreaOrigin, radioAreaSize, self.overtones)
+
+        self.radios = self.radioArea.radios
 
         
 
@@ -101,7 +100,8 @@ class Console:
         self.screen.draw(self.surf)
 
         self.sliderArea.draw(self.surf)
-        for radio in self.radios: radio.draw(self.surf)
+        
+        self.radioArea.draw(self.surf)
 
         self.ratioDisp.draw(self.surf)
 
@@ -294,48 +294,60 @@ class Slider:
         return (beat_offset, ms_per_beat)
 
 
+class RadioArea:
+    def __init__(self, origin, size, overtones):
+
+        radioRad = 5
+        self.radios = [
+            RadioBtn(pygame.math.Vector2(origin[0], origin[1] + (overtone.overtone-1)*size[1]/(len(overtones)-1)), radioRad, overtone) for overtone in overtones
+            ]
+
+        #constants for drawing the sine waves next to the radio buttons
+        self.horizontalBuf = 20
+        self.sineLength = size[0] - self.horizontalBuf
+        self.sampRate = 55
+
+    def draw(self, surface):
+
+        for radio in self.radios:
+            radio.draw(surface)
+
+            offset = radio.pos + (self.horizontalBuf, 0)
+            sine = [((i/self.sampRate)*self.sineLength + offset[0], -10*math.sin(2*math.pi * i/self.sampRate * radio.overtone.overtone/2) + offset[1]) for i in range(self.sampRate)]
+
+            pygame.draw.aalines(surface, (147,80,90), False, sine)
+
+
+    
+        
+
+
 class RadioBtn:
-    def __init__(self, overtone, color):
-        miny = 75
-        maxy = CONSOLE_HEIGHT-miny
+    def __init__(self, position, radius, overtone):
 
         self.overtone = overtone
 
-        self.pos = pygame.Vector2(CONSOLE_WIDTH - 95, miny + (self.overtone.overtone-1)*(maxy-miny)/6)
-
         self.active = self.overtone.active
 
+        self.pos = position
+        self.radius = radius
 
-        self.onCol = pygame.Color(color)
+        self.onCol = pygame.Color(self.overtone.poly.color)
 
-        self.offCol = pygame.Color(color)
+        self.offCol = pygame.Color(self.overtone.poly.color)
         hsva = self.offCol.hsva
         self.offCol.hsva = (hsva[0], hsva[1], hsva[2] - 30, hsva[3])
 
 
 
     def draw(self, surface):
-        pygame.draw.circle(surface, (0,0x79,0x87), self.pos, 7, 2)
+        pygame.draw.circle(surface, (0,0x79,0x87), self.pos, self.radius+2, 2)
 
         if self.active: 
-            pygame.draw.circle(surface, self.onCol, self.pos, 5)
+            pygame.draw.circle(surface, self.onCol, self.pos, self.radius)
         else:
-            pygame.draw.circle(surface, self.offCol, self.pos, 5)
+            pygame.draw.circle(surface, self.offCol, self.pos, self.radius)
 
-        #for i in range(self.waveLength):
-        #    pygame.draw.circle(surface, (0, 0, 0), self.pos + (20 + i, -10*math.sin(2*math.pi * i/self.waveLength * self.num/2)), 1)
-
-
-        
-        sampleRate =55
-        pxlLength = 115
-        offset = self.pos+(20,0)
-        sine = [((i/sampleRate)*pxlLength + offset[0], -10*math.sin(2*math.pi * i/sampleRate * self.overtone.overtone/2) + offset[1]) for i in range(sampleRate)]
-
-
-        #,digitalOff = (0,0x55,0x63)
-        #digitalBG = (0,0x35,0x55)
-        pygame.draw.aalines(surface, (147,80,90), False, sine) #(139,72,82)
 
     def updateActive(self, active):
         self.active = active
@@ -346,6 +358,8 @@ class RadioBtn:
             if not SMOOTH_SLIDE: self.overtone.oscillator.set_volume(1)
         else:
             self.overtone.oscillator.set_volume(0)
+
+
 
 
 class RatioDisp:
@@ -388,8 +402,6 @@ class Overtone:
         self.poly = poly
 
         self.active = False
-
-        self.radio = RadioBtn(self, poly.color)
 
     def updateHz(self, fundHz, fundPhase):
         self.Hz = fundHz * self.overtone
@@ -610,10 +622,10 @@ class main:
                         offset_y = slider.pos[1] - event.pos[1]
 
                     else:
-                        for overtone in overtones:
-                            if (math.dist(overtone.radio.pos, event.pos) <= 5):  #if one of the overtones' radio buttons is clicked, toggle it on/off
+                        for radio in radios:
+                            if (math.dist(radio.pos, event.pos) <= radio.radius):  #if one of the overtones' radio buttons is clicked, toggle it on/off
 
-                                overtone.radio.updateActive(not overtone.active)
+                                radio.updateActive(not radio.active)
                                 console.draw(window)
 
             
