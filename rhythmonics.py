@@ -1,6 +1,7 @@
 import pygame
 import math
 import numpy as np
+from scipy.stats import multivariate_normal as bivarNorm
 
 
 
@@ -325,19 +326,38 @@ class RadioBtn:
 
         self.onCol = pygame.Color(self.overtone.poly.color)
 
+        self.surf = pygame.Surface((self.radius*2, self.radius*2), pygame.SRCALPHA)
+        self.surf.set_colorkey((0,0,0))
+
+
+        mu = (self.radius, self.radius)
+        standDevScale = 5/8
+        sigma = np.diag(((self.radius*standDevScale)**2, (self.radius*standDevScale)**2))
+        for x in range(radius*2):
+            for y in range(radius*2):
+                alpha = int(255 * (2*math.pi*(self.radius*standDevScale)**2) * bivarNorm.pdf((x,y), mu, sigma))
+                self.onCol.a = alpha
+                self.surf.set_at((x,y), self.onCol)
+
+        #pygame.draw.circle(self.surf, self.onCol, (self.radius, self.radius), self.radius)
+
         self.offCol = pygame.Color(self.overtone.poly.color)
         hsva = self.offCol.hsva
-        self.offCol.hsva = (hsva[0], hsva[1], hsva[2] - 30, hsva[3])
+        self.offCol.hsva = (hsva[0], hsva[1], hsva[2] - 40, hsva[3])
+
+        self.borderCol = (0,0x79,0x87)
+        self.borderWidth = 2
 
 
 
     def draw(self, surface):
-        pygame.draw.circle(surface, (0,0x79,0x87), self.pos, self.radius+2, 2)
+        pygame.draw.circle(surface, self.offCol, self.pos, self.radius)
 
         if self.active: 
-            pygame.draw.circle(surface, self.onCol, self.pos, self.radius)
-        else:
-            pygame.draw.circle(surface, self.offCol, self.pos, self.radius)
+            surface.blit(self.surf, self.pos - (self.radius,self.radius))
+
+        pygame.draw.circle(surface, self.borderCol, self.pos, self.radius + self.borderWidth, 2)
+            
 
 
     def updateActive(self, active):
@@ -468,7 +488,7 @@ class Ball:
 
         self.surf = pygame.Surface((BALL_RADIUS*2, BALL_RADIUS*2))
         self.surf.set_colorkey((0,0,0))
-        self.surf.set_alpha(alpha)
+        self.surf.set_alpha(self.alpha)
         pygame.draw.circle(self.surf, self.color, (BALL_RADIUS, BALL_RADIUS), BALL_RADIUS)
 
         if isHead: self.tail = Tail(self)
