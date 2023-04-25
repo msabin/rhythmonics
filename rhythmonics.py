@@ -1,7 +1,6 @@
 import pygame
 import math
 import numpy as np
-from scipy.stats import multivariate_normal as bivarNorm
 
 
 
@@ -329,13 +328,17 @@ class RadioBtn:
         self.surf = pygame.Surface((self.radius*2, self.radius*2), pygame.SRCALPHA)
         self.surf.set_colorkey((0,0,0))
 
+        #Bivariate Gaussian function of two i.i.d. vars.  Since i.i.d. it just takes one mu and one sigma for both vars.
+        #Height defaults can be set to arbitary height of peak.  Set height to 1/(2*math.pi*sigma**2) for valid pdf normal distr
+        def bivarGauss(x, y, mu, sigma, height):
+            return height * math.e**(-1/2 * ((x-mu)**2 + (y-mu)**2)/sigma**2)
 
-        mu = (self.radius, self.radius)
-        standDevScale = 5/8
-        sigma = np.diag(((self.radius*standDevScale)**2, (self.radius*standDevScale)**2))
+        mu = self.radius
+        sigma = self.radius*3/5 #5/8
+        height = 255 #height is opaque alpha and then fades to transparent
         for x in range(radius*2):
             for y in range(radius*2):
-                alpha = int(255 * (2*math.pi*(self.radius*standDevScale)**2) * bivarNorm.pdf((x,y), mu, sigma))
+                alpha = int(bivarGauss(x, y, mu, sigma, height))
                 self.onCol.a = alpha
                 self.surf.set_at((x,y), self.onCol)
 
