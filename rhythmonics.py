@@ -257,14 +257,19 @@ class Slider:
             Hz = 110 + (2000-110)*math.log(1 + (HzScale - .75)/.25, 2)        #caps at 2000 Hz (seventh harmonic will be at 14000Hz)
             
 
-
-        ms_per_beat = 1000/self.overtones[0].Hz #Keep ms_per_beat based on fundamental freq unless slider is not selected and we update fundamental Hz
+        if not SMOOTH_SLIDE:
+            if self.overtones[0].Hz != 0:
+                ms_per_beat = 1000/self.overtones[0].Hz #Keep ms_per_beat based on fundamental freq unless slider is not selected and we update fundamental Hz
+            else:
+                ms_per_beat = 0
 
         if SMOOTH_SLIDE or (not self.isSelected):  #if slider isn't selected we *now* update the VCOs
         
             if Hz == 0: 
                 ms_per_beat = 0
-                for overtone in self.overtones: overtone.oscillator.stop() #kill all oscillators
+                for overtone in self.overtones: 
+                    overtone.Hz = 0
+                    overtone.oscillator.stop() #kill all oscillators
 
             else: 
                 ms_per_beat = 1000/Hz 
@@ -292,7 +297,7 @@ class Slider:
 class RadioArea:
     def __init__(self, origin, size, overtones):
 
-        radioRad = 6
+        radioRad = 5
         self.radios = [
             RadioBtn(pygame.math.Vector2(origin[0], origin[1] + (overtone.overtone-1)*size[1]/(len(overtones)-1)), radioRad, overtone) for overtone in overtones
             ]
@@ -325,7 +330,7 @@ class RadioBtn:
 
         self.onCol = pygame.Color((self.overtone.poly.color))
         hsla = self.onCol.hsla
-        self.onCol.hsla = (hsla[0], hsla[1], hsla[2] + 5, hsla[3])
+        self.onCol.hsla = (hsla[0], hsla[1], hsla[2] + 3, hsla[3])
 
         self.surf = pygame.Surface((self.radius*2, self.radius*2), pygame.SRCALPHA)
         self.surf.set_colorkey((0,0,0))
@@ -360,7 +365,7 @@ class RadioBtn:
         if self.active: 
             surface.blit(self.surf, self.pos - (self.radius,self.radius))
 
-        pygame.draw.circle(surface, self.borderCol, self.pos, self.radius + self.borderWidth, 3)
+        pygame.draw.circle(surface, self.borderCol, self.pos, self.radius + self.borderWidth, 2)
             
 
 
@@ -583,7 +588,7 @@ class main:
     pygame.mouse.set_cursor(pygame.cursors.tri_left)
     #dispaySize = pygame.display.get_desktop_sizes()
 
-    windowSize = (1100, 660)
+    windowSize = (1050, 625)
     windowCenter = pygame.Vector2(windowSize[0]/2, windowSize[1]/2)
     window = pygame.display.set_mode(windowSize)
 
