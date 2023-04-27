@@ -306,16 +306,25 @@ class RadioArea:
         self.horizontalBuf = 20
         self.sineLength = size[0] - self.horizontalBuf
         self.sampRate = 55
+        self.peakHeight = 10
+        self.tickLength = 4
+        self.tickWidth = 1
 
     def draw(self, surface):
 
         for radio in self.radios:
             radio.draw(surface)
 
+            overtoneNum = radio.overtone.overtone
             offset = radio.pos + (self.horizontalBuf, 0)
-            sine = [((i/self.sampRate)*self.sineLength + offset[0], -10*math.sin(2*math.pi * i/self.sampRate * radio.overtone.overtone/2) + offset[1]) for i in range(self.sampRate)]
+            sine = [((i/self.sampRate)*self.sineLength + offset[0], -self.peakHeight*math.sin(2*math.pi * i/self.sampRate * overtoneNum/2) + offset[1]) for i in range(self.sampRate)]
 
             pygame.draw.aalines(surface, (147,80,90), False, sine)
+
+            for i in range(overtoneNum):
+                peakOffset = offset[0] + (2*i+1)*self.sineLength/(overtoneNum*2)
+                peakHeight = offset[1] + self.peakHeight*(-1)**(i+1)
+                pygame.draw.line(surface, (147,80,90), (peakOffset, peakHeight + self.tickLength/2), (peakOffset, peakHeight - self.tickLength/2), self.tickWidth)
 
 
 class RadioBtn:
@@ -341,7 +350,7 @@ class RadioBtn:
             return height * math.e**(-1/2 * ((x-mu)**2 + (y-mu)**2)/sigma**2)
 
         mu = self.radius
-        sigma = self.radius*1/2
+        sigma = self.radius*4/7
         height = 255 #height is max opaque alpha and then fades to transparent
         for x in range(radius*2):
             for y in range(radius*2):
