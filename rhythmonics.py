@@ -17,7 +17,7 @@ class Console:
         self.origin = origin
 
         self.baseColor = (0xff,0xbc,0xcf) #(169,193,255)
-        self.secColor = (0,0x97,0x94)
+        self.secColor = (0,0x93,0x90)
 
         consoleSize = pygame.Vector2(size)
 
@@ -34,23 +34,20 @@ class Console:
         self.screen = Screen(screenOrigin, screenSize, screenColor, startHz)
 
         self.overtones = self.screen.overtones
-
-
-
-        radioAreaOrigin = (810, 75)
-        radioAreaSize = (135 , 350)
-
-        self.radioArea = RadioArea(radioAreaOrigin, radioAreaSize, self.overtones)
-
-        self.radios = self.radioArea.radios
-
-        
+     
 
     
         labelsFontSize = 18
         #path = pygame.font.match_font('Abadi MT Condensed Extra Bold')
         labelsFont = pygame.font.Font('Menlo.ttc', labelsFontSize)
-        labelsCol = (0,0,0) #(76,100,161)
+        labelsCol = (125,58,68) #(76,100,161)
+
+
+        radioAreaOrigin = (810, 65)
+        radioAreaSize = (135 , 350)
+
+        self.radioArea = RadioArea(radioAreaOrigin, radioAreaSize, self.overtones, self.secColor, labelsFont, labelsCol)  
+
 
         labels = [labelsFont.render('Hz', True, labelsCol), labelsFont.render('BPM', True, labelsCol), 
                   labelsFont.render('FREEZE', True, labelsCol), labelsFont.render('GROOVE', True, labelsCol), 
@@ -194,7 +191,7 @@ class SliderArea:
         sliderPos = pygame.Vector2(sliderOffset, sliderMaxy-sliderStart*(sliderMaxy-sliderMiny))
 
 
-        self.slider = Slider(sliderPos, sliderSize, self.overtones, sliderMiny, sliderMaxy)
+        self.slider = Slider(sliderPos, sliderSize, self.color, self.overtones, sliderMiny, sliderMaxy)
 
                 
 
@@ -204,8 +201,8 @@ class SliderArea:
         #draw slider groove and slider
         sliderRutCol = (150,150,150)
         pygame.draw.line(surface, sliderRutCol, (self.slider.pos[0], self.slider.miny), (self.slider.pos[0], self.slider.maxy), width=2) #slider track visualized
-        self.slider.handle = pygame.Rect(self.slider.pos - self.slider.size/2, self.slider.size)
-        pygame.draw.rect(surface, self.color, self.slider.handle)
+
+        self.slider.draw(surface)
 
         #Draw Hz display
         surface.blit(self.HzBox, (self.origin[0], self.origin[1]))
@@ -229,9 +226,10 @@ class SliderArea:
 
 
 class Slider:
-    def __init__(self, position, size, overtones, miny, maxy):
+    def __init__(self, position, size, color, overtones, miny, maxy):
         self.pos = position
         self.size = size
+        self.color = color
 
         self.overtones = overtones
 
@@ -292,15 +290,28 @@ class Slider:
 
 
         return (beat_offset, ms_per_beat)
+    
+    def draw(self, surface):
+        self.handle = pygame.Rect(self.pos - self.size/2, self.size)
+        pygame.draw.rect(surface, self.color, self.handle)
 
 
 class RadioArea:
-    def __init__(self, origin, size, overtones):
+    def __init__(self, origin, size, overtones, secColor, labelsFont, labelsCol):
+
+        self.origin = origin
+        self.size = size
 
         radioRad = 5
         self.radios = [
             RadioBtn(pygame.math.Vector2(origin[0], origin[1] + (overtone.overtone-1)*size[1]/(len(overtones)-1)), radioRad, overtone) for overtone in overtones
             ]
+        
+        killSwitchSize = (15,15)
+        killSwitchOrigin = (origin[0], origin[1] + size[1] + 60)
+        self.killSwitch = KillSwitch(killSwitchOrigin, killSwitchSize, secColor, self.radios)
+
+        self.killSwitchLabel = labelsFont.render('SSHHHHHHH!', True, labelsCol)
 
         #constants for drawing the sine waves next to the radio buttons
         self.horizontalBuf = 20
@@ -311,6 +322,7 @@ class RadioArea:
         self.tickWidth = 1
 
     def draw(self, surface):
+        if TYPESET: pygame.draw.rect(surface, (0,0,0), (self.origin, self.size), 1)
 
         for radio in self.radios:
             radio.draw(surface)
@@ -326,6 +338,9 @@ class RadioArea:
                 peakHeight = offset[1] + self.peakHeight*(-1)**(i+1)
                 pygame.draw.line(surface, (147,80,90), (peakOffset, peakHeight + self.tickLength/2), (peakOffset, peakHeight - self.tickLength/2), self.tickWidth)
 
+        self.killSwitch.draw(surface)
+        surface.blit(self.killSwitchLabel, self.killSwitch.pos + (self.horizontalBuf - 2, -self.killSwitch.size[1]/2 - 3))
+
 
 class RadioBtn:
     def __init__(self, position, radius, overtone):
@@ -337,12 +352,19 @@ class RadioBtn:
         self.pos = position
         self.radius = radius
 
-        self.onCol = pygame.Color((self.overtone.poly.color))
-        hsla = self.onCol.hsla
-        self.onCol.hsla = (hsla[0], hsla[1], hsla[2] + 3, hsla[3])
+        self.borderCol = (0,0x79,0x87)
+        self.borderWidth = 2
 
-        self.surf = pygame.Surface((self.radius*2, self.radius*2), pygame.SRCALPHA)
-        self.surf.set_colorkey((0,0,0))
+        self.offCol = pygame.Color(self.overtone.poly.color)
+        hsva = self.offCol.hsva
+        self.offCol.hsva = (hsva[0], hsva[1], hsva[2] - 40, hsva[3])
+
+        self.lightCol = pygame.Color((self.overtone.poly.color))
+        hsla = self.lightCol.hsla
+        self.lightCol.hsla = (hsla[0], hsla[1], hsla[2] + 3, hsla[3])
+
+        self.light = pygame.Surface((self.radius*2, self.radius*2), pygame.SRCALPHA)
+        self.light.set_colorkey((0,0,0))
 
         #Bivariate Gaussian function of two i.i.d. vars.  Since i.i.d. it just takes one mu and one sigma for both vars.
         #Height defaults can be set to arbitary height of peak.  Set height to 1/(2*math.pi*sigma**2) for valid pdf normal distr
@@ -355,38 +377,64 @@ class RadioBtn:
         for x in range(radius*2):
             for y in range(radius*2):
                 alpha = int(bivarGauss(x, y, mu, sigma, height))
-                self.onCol.a = alpha
-                self.surf.set_at((x,y), self.onCol)
-                
+                self.lightCol.a = alpha
+                self.light.set_at((x,y), self.lightCol)
 
-        self.offCol = pygame.Color(self.overtone.poly.color)
-        hsva = self.offCol.hsva
-        self.offCol.hsva = (hsva[0], hsva[1], hsva[2] - 40, hsva[3])
+    def press(self):
+        self.active = not self.active
 
-        self.borderCol = (0,0x79,0x87)
-        self.borderWidth = 2
+        self.overtone.active = self.active
 
-
+        if self.active: 
+            if not SMOOTH_SLIDE: self.overtone.oscillator.set_volume(1)
+        else:
+            self.overtone.oscillator.set_volume(0)
 
     def draw(self, surface):
         pygame.draw.circle(surface, self.offCol, self.pos, self.radius)
 
         if self.active: 
-            surface.blit(self.surf, self.pos - (self.radius,self.radius))
+            surface.blit(self.light, self.pos - (self.radius,self.radius))
 
         pygame.draw.circle(surface, self.borderCol, self.pos, self.radius + self.borderWidth, 2)
-            
 
 
-    def updateActive(self, active):
-        self.active = active
+class KillSwitch:
+    def __init__(self, position, size, color, radios):
+        self.pos = pygame.math.Vector2(position)
+        self.size = pygame.math.Vector2(size)
+        self.color = color
 
-        self.overtone.active = self.active
+        self.radios = radios
 
-        if active: 
-            if not SMOOTH_SLIDE: self.overtone.oscillator.set_volume(1)
+        self.button = pygame.Rect(self.pos - self.size/2, self.size)
+
+        self.isPressed = False
+        self.pressedSize = self.size - (1,1)
+
+        self.downClick = pygame.mixer.Sound('down-click.wav')
+        self.upClick = pygame.mixer.Sound('up-click.wav')
+
+        self.borderRad = 4
+
+    def press(self):
+        self.isPressed = not self.isPressed
+
+        if self.isPressed:
+            self.downClick.play()
+
+            for radio in self.radios:
+                if radio.active:
+                    radio.press()
         else:
-            self.overtone.oscillator.set_volume(0)
+            self.upClick.play()
+
+
+    def draw( self, surface):
+        if not self.isPressed:
+            pygame.draw.rect(surface, self.color, self.button, 0, self.borderRad)
+        else:
+            pygame.draw.rect(surface, self.color, ((self.pos-self.pressedSize/2), self.pressedSize), 0, self.borderRad-1)
 
 
 class RatioDisp:
@@ -607,10 +655,11 @@ class main:
     Hz =  1
     console = Console(consoleOrigin, consoleSize, Hz)
 
+    screen = console.screen
     overtones = console.overtones
     slider = console.sliderArea.slider
-    radios = console.radios
-    screen = console.screen
+    radios = console.radioArea.radios
+    killSwitch = console.radioArea.killSwitch
 
     polys = screen.polys
     balls = [poly.ball for poly in polys]
@@ -618,7 +667,7 @@ class main:
 
 
     
-    radios[0].updateActive(True)
+    radios[0].press()
 
     console.draw(window)
 
@@ -652,11 +701,15 @@ class main:
 
                         offset_y = slider.pos[1] - posOnConsole[1]
 
+                    elif killSwitch.button.collidepoint(posOnConsole):
+                        killSwitch.press()
+                        console.draw(window)
+                        
                     else:
                         for radio in radios:
                             if (math.dist(radio.pos, posOnConsole) <= radio.radius):  #if one of the overtones' radio buttons is clicked, toggle it on/off
 
-                                radio.updateActive(not radio.active)
+                                radio.press()
                                 console.draw(window)
 
             
@@ -676,11 +729,14 @@ class main:
 
 
             elif event.type == pygame.MOUSEBUTTONUP:
-                if (event.button == 1) and slider.isSelected:         #update Hz if the slider was selected and now released
+                if event.button == 1:                           
+                    if slider.isSelected and not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(beat_offset, clock)
 
-                    slider.isSelected = False                    #unselect slider and then update slider's affect on Hz
+                    slider.isSelected = False 
 
-                    if not SMOOTH_SLIDE: (beat_offset, ms_per_beat) = slider.updateVolt(beat_offset, clock)
+                    if killSwitch.isPressed:
+                        killSwitch.press()
+                        console.draw(window)
 
             
 
