@@ -283,7 +283,7 @@ class Slider:
                 if SMOOTH_SLIDE: 
                     for overtone in self.overtones: overtone.oscillator.set_volume(0)
 
-                pygame.time.delay(int(max(buffer_time - clock.tick(), 0)))    #wait to play sounds until caught up to extra buffer time
+                pygame.time.wait(int(max(buffer_time - clock.tick(), 0)))    #wait to play sounds until caught up to extra buffer time
 
                 for overtone in self.overtones: overtone.oscillator.play(loops=-1) #play them all at the same time
 
@@ -367,7 +367,7 @@ class RadioBtn:
         self.light.set_colorkey((0,0,0))
 
         #Bivariate Gaussian function of two i.i.d. vars.  Since i.i.d. it just takes one mu and one sigma for both vars.
-        #Height defaults can be set to arbitary height of peak.  Set height to 1/(2*math.pi*sigma**2) for valid pdf normal distr
+        #Height defaults can be set to arbitary height of peak.  Set height to 1/(2*math.pi * sigma**2) for valid pdf normal distr
         def bivarGauss(x, y, mu, sigma, height):
             return height * math.e**(-1/2 * ((x-mu)**2 + (y-mu)**2)/sigma**2)
 
@@ -422,10 +422,11 @@ class KillSwitch:
 
         if self.isPressed:
             self.downClick.play()
+            pygame.time.wait(100)
 
             for radio in self.radios:
-                if radio.active:
-                    radio.press()
+                if radio.active: radio.press()
+
         else:
             self.upClick.play()
 
