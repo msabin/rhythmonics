@@ -1,0 +1,3 @@
+# CONSTANTS
+SMOOTH_SLIDE = True
+TYPESET = False
