@@ -39,49 +39,36 @@ class Console:
     
         labelsFontSize = 18
         #path = pygame.font.match_font('Abadi MT Condensed Extra Bold')
-        labelsFont = pygame.font.Font('Menlo.ttc', labelsFontSize)
-        labelsCol = (125,58,68) #(76,100,161)
-
-
-        radioAreaOrigin = (810, 65)
-        radioAreaSize = (135 , 350)
-
-        self.radioArea = RadioArea(radioAreaOrigin, radioAreaSize, self.overtones, self.secColor, labelsFont, labelsCol)  
-
-
-        labels = [labelsFont.render('Hz', True, labelsCol), labelsFont.render('BPM', True, labelsCol), 
-                  labelsFont.render('FREEZE', True, labelsCol), labelsFont.render('GROOVE', True, labelsCol), 
-                  labelsFont.render('CHAOS', True, labelsCol), labelsFont.render('HARMONY', True, labelsCol), 
-                  labelsFont.render('EEEEEE', True, labelsCol)]
+        self.labelsFont = pygame.font.Font('Menlo.ttc', labelsFontSize)
+        self.labelsCol = (125,58,68) #(76,100,161)
         
 
         digitalFontSize = 30
-        digitalFont = pygame.font.Font('digital-7 (mono).ttf', digitalFontSize)
+        self.digitalFont = pygame.font.Font('digital-7 (mono).ttf', digitalFontSize)
 
-        digitalOn = (0,0xcf,0xdd)
-        digitalOff = (0,0x55,0x63)
-        digitalBG = (0,0x35,0x55)
-
-        HzBox = digitalFont.render(' 8888.88 ', False, digitalOff, digitalBG)  #digital box to print Hz on
-        BPM_Box = digitalFont.render(' 888888 ', False, digitalOff, digitalBG)
-        displayBoxes = [HzBox, BPM_Box]
+        self.digitalOn = (0,0xcf,0xdd)
+        self.digitalOff = (0,0x55,0x63)
+        self.digitalBG = (0,0x35,0x55)
 
 
         sliderAreaOrigin = (55, 45)
         sliderAreaHeight = consoleSize[1]*.85
 
         #Slider's "voltage" will control VCOs (oscillators) of the overtones
-        self.sliderArea = SliderArea(sliderAreaOrigin, sliderAreaHeight, self.overtones, self.secColor, labels, displayBoxes, digitalFont, digitalOn)
+        self.sliderArea = SliderArea(self, sliderAreaOrigin, sliderAreaHeight)
+
+
+        radioAreaOrigin = (810, 65)
+        radioAreaSize = (135 , 350)
+
+        self.radioArea = RadioArea(self, radioAreaOrigin, radioAreaSize) 
 
 
 
         ratioOrigin = screenOrigin + (108, screenSize[1] + 80)
         #ratioLength = screenSize[0]-40
 
-        digitalSlot = digitalFont.render(f'8', False, digitalOff, digitalBG)
-        ratioColon = labelsFont.render(':', False, labelsCol)
-
-        self.ratioDisp = RatioDisp(ratioOrigin, self.overtones, digitalSlot, digitalFont, digitalOn, ratioColon)
+        self.ratioDisp = RatioDisp(self, ratioOrigin)
 
 
     def draw(self, targetSurf):
@@ -155,25 +142,34 @@ class Screen:
 
 
 class SliderArea:
-    def __init__(self, origin, height, overtones, color, labels, displayBoxes, digitalFont, digitalCol):
-        self.overtones = overtones
-
+    def __init__(self, console, origin, height):
         self.origin = origin
         self.height = height
 
-        self.color = color
+        self.overtones = console.overtones
 
+        self.color = console.secColor
 
+        labelsFont = console.labelsFont
+        labelsCol = console.labelsCol
 
-        self.HzLabel = labels.pop(0)
-        self.BPM_Label = labels.pop(0)
-        self.labels = labels
+        self.HzLabel = labelsFont.render('Hz', True, labelsCol)
+        self.BPM_Label = labelsFont.render('BPM', True, labelsCol)
 
-        self.HzBox = displayBoxes[0]
-        self.BPM_Box = displayBoxes[1]
+        self.labels = [labelsFont.render('FREEZE', True, labelsCol), labelsFont.render('GROOVE', True, labelsCol), 
+                  labelsFont.render('CHAOS', True, labelsCol), labelsFont.render('HARMONY', True, labelsCol), 
+                  labelsFont.render('EEEEEE', True, labelsCol)]
+        
 
-        self.digitalFont = digitalFont
-        self.digitalCol = digitalCol
+        self.digitalFont = console.digitalFont
+        self.digitalOn = console.digitalOn
+
+        digitalOff = console.digitalOff
+        digitalBG = console.digitalBG
+        
+        self.HzBox = self.digitalFont.render(' 8888.88 ', False, digitalOff, digitalBG)  #digital box to print Hz on
+        self.BPM_Box = self.digitalFont.render(' 888888 ', False, digitalOff, digitalBG)
+        
 
 
         self.horizontalBuf = 20
@@ -184,7 +180,7 @@ class SliderArea:
         sliderMiny = self.origin[1] + self.HzBox.get_height() + verticalBuf
         sliderMaxy = self.origin[1] + self.height - self.BPM_Box.get_height() - verticalBuf
         
-        labelsWidth = max([label.get_width() for label in labels])
+        labelsWidth = max([label.get_width() for label in self.labels])
         sliderOffset = self.origin[0] + labelsWidth + self.horizontalBuf + sliderSize[0]
         sliderStart = .25        #slider knob starts at this fraction of the slider range
 
@@ -207,7 +203,7 @@ class SliderArea:
         #Draw Hz display
         surface.blit(self.HzBox, (self.origin[0], self.origin[1]))
 
-        HzDisp = self.digitalFont.render(" " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " ", False, self.digitalCol)
+        HzDisp = self.digitalFont.render(" " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " ", False, self.digitalOn)
         surface.blit(HzDisp, (self.origin[0], self.origin[1]))
 
         surface.blit(self.HzLabel, (self.origin[0]+self.HzBox.get_width()+self.horizontalBuf/2,self.origin[1]))
@@ -219,7 +215,7 @@ class SliderArea:
         #Draw BPM display
         surface.blit(self.BPM_Box, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
 
-        BPM_Disp = self.digitalFont.render(" " + f'{self.overtones[0].Hz * 60:06.0f}'.replace("1", " 1") + " ", False, self.digitalCol)
+        BPM_Disp = self.digitalFont.render(" " + f'{self.overtones[0].Hz * 60:06.0f}'.replace("1", " 1") + " ", False, self.digitalOn)
         surface.blit(BPM_Disp, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
 
         surface.blit(self.BPM_Label, (self.origin[0]+self.BPM_Box.get_width()+self.horizontalBuf/2,self.origin[1] + self.height - self.BPM_Box.get_height()))
@@ -297,21 +293,21 @@ class Slider:
 
 
 class RadioArea:
-    def __init__(self, origin, size, overtones, secColor, labelsFont, labelsCol):
+    def __init__(self, console, origin, size):
 
         self.origin = origin
         self.size = size
 
         radioRad = 5
         self.radios = [
-            RadioBtn(pygame.math.Vector2(origin[0], origin[1] + (overtone.overtone-1)*size[1]/(len(overtones)-1)), radioRad, overtone) for overtone in overtones
+            RadioBtn(pygame.math.Vector2(origin[0], origin[1] + (overtone.overtone-1)*size[1]/(len(console.overtones)-1)), radioRad, overtone) for overtone in console.overtones
             ]
         
         killSwitchSize = (15,15)
         killSwitchOrigin = (origin[0], origin[1] + size[1] + 60)
-        self.killSwitch = KillSwitch(killSwitchOrigin, killSwitchSize, secColor, self.radios)
+        self.killSwitch = KillSwitch(killSwitchOrigin, killSwitchSize, console.secColor, self.radios)
 
-        self.killSwitchLabel = labelsFont.render('SSHHHHHHH!', True, labelsCol)
+        self.killSwitchLabel = console.labelsFont.render('SSHHHHHHH!', True, console.labelsCol)
 
         #constants for drawing the sine waves next to the radio buttons
         self.horizontalBuf = 20
@@ -439,13 +435,14 @@ class KillSwitch:
 
 
 class RatioDisp:
-    def __init__(self, origin, overtones, digitalSlot, digitalFont, digitalCol, ratioColon):
+    def __init__(self, console, origin):
         self.origin = origin
-        self.overtones = overtones
-        self.digitalFont = digitalFont
-        self.digitalCol = digitalCol
-        self.digitalSlot = digitalSlot
-        self.ratioColon = ratioColon
+        self.overtones = console.overtones
+        self.digitalFont = console.digitalFont
+        self.digitalOn = console.digitalOn
+
+        self.digitalSlot = self.digitalFont.render(f'8', False, console.digitalOff, console.digitalBG)
+        self.ratioColon = console.labelsFont.render(':', False, console.labelsCol)
         self.horizontalBuf = 4
 
     def draw(self, surface):
@@ -454,7 +451,7 @@ class RatioDisp:
         for i, overtone in enumerate(self.overtones):
             surface.blit(self.digitalSlot, (self.origin[0] + offset*i, self.origin[1]))
             if overtone.active:
-                ratioDisp = self.digitalFont.render(f'{overtone.overtone}'.replace("1", " 1"), False, self.digitalCol)
+                ratioDisp = self.digitalFont.render(f'{overtone.overtone}'.replace("1", " 1"), False, self.digitalOn)
                 surface.blit(ratioDisp, (self.origin[0] + offset*i, self.origin[1]))
 
             if overtone != self.overtones[-1]:
