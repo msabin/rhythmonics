@@ -1,6 +1,14 @@
+"""
+   main event loop running the rhythmonics program
+   
+   This file imports the local file interface.py to instantiate the GUI
+   console of rhythmonics and run an event loop to allow interactions
+   with the console, update the console components, and draw the console.
+"""
+
+
 import pygame
 import math
-import numpy as np
 
 import interface
 import testSettings
@@ -82,9 +90,8 @@ while not user_done:
 
                             radio.press()
                             console.draw(window)
-
         
-        elif (event.type == pygame.MOUSEMOTION):
+        elif event.type == pygame.MOUSEMOTION:
             if slider.isSelected:                              #update slider position (but don't affect anything until mouse released)
                 posOnConsole = event.pos - console.origin
 
@@ -96,8 +103,6 @@ while not user_done:
                 (beat_offset, ms_per_beat) = slider.updateVolt(beat_offset, clock)
 
                 console.draw(window)
-
-
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:                           
@@ -111,6 +116,12 @@ while not user_done:
 
                 if killSwitch.isPressed:
                     killSwitch.press()
+                    console.draw(window)
+
+        elif event.type == pygame.KEYDOWN:
+            for i, radio in enumerate(radios, 1):
+                if pygame.key.key_code(f'{i}') == event.key:
+                    radio.press()
                     console.draw(window)
 
         
