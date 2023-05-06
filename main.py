@@ -20,6 +20,7 @@ pygame.init()
 
 pygame.mouse.set_cursor(pygame.cursors.tri_left)
 
+# TODO: should I get the screen size or something like that?  Should I set the os at top?
 windowSize = (1050, 625)
 windowCenter = pygame.Vector2(windowSize[0]/2, windowSize[1]/2)
 window = pygame.display.set_mode(windowSize)
@@ -50,7 +51,7 @@ clock.tick()
 # Initially start all the overtones (silently) playing at the same time to be in sync.
 for overtone in overtones: overtone.oscillator.play(loops=-1)
 
-# Turn the second and third overtones on for the user to begin with and draw the console,
+# Turn the second and third overtones on for the user to begin with and draw the console.
 radios[1].press()
 radios[2].press()
 
@@ -84,11 +85,12 @@ while not user_done:
                     
                 else:
                     for radio in radios:
-                        if (math.dist(radio.pos, posOnConsole) <= radio.radius):
+                        if math.dist(radio.pos, posOnConsole) <= radio.radius:
                             radio.press()
                             console.draw(window)
         
         elif event.type == pygame.MOUSEMOTION:
+            # If the slider is selected, update its position and the "voltage" it controls which, in turn, controls the speed of the oscillators
             if slider.isSelected:
                 posOnConsole = event.pos - console.origin  # Set position relative to console origin instead of window origin.
 
@@ -135,14 +137,14 @@ while not user_done:
 
     # Draw only the screen directly to the window.  The console only redraws itself for relevant events in the 
     # event loop, but the screen redraws every event loop to update the balls' movements.  Then update the whole
-    # display on the screen.
+    # display on the screen.git 
     screen.draw(window, console.origin)
     pygame.display.flip()
 
 
 
     if SMOOTH_SLIDE:
-        # Fade the volume of active oscillators in over event loops runs to maximum volume.  All oscillators are 
+        # Fade the volume of active oscillators in over event loop runs to maximum volume.  All oscillators are 
         # started muted and this loop increments the volume of active oscillators by a constant each event loop 
         # until they're at maximum volume.  
         # 

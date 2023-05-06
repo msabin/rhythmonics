@@ -9,7 +9,13 @@ TYPESET = testSettings.TYPESET
 
 
 class Console:
+    """
+        Test
+        
+        Trying some things here
+    """
     def __init__(self, origin, size, startHz):
+        """Test3"""
         self.surf = pygame.Surface(size)
 
         self.origin = origin
@@ -125,9 +131,9 @@ class Screen:
 
             poly.draw(self.surf)
 
-            #if polygon is actually a circle, then draw tick marks to indicate where ball will make a click sound when it passed it
+            # If polygon is actually a circle, then draw tick marks to indicate where ball will make a click sound when passed.
+            tickLength = 5
             if not poly.isPointy: 
-                tickLength = 5
                 for i, vert in enumerate(poly.verts):
                     xTick = math.cos(math.pi/2 - 2*math.pi * i/len(poly.verts))*tickLength
                     yTick = math.sin(math.pi/2 - 2*math.pi * i/len(poly.verts))*tickLength
@@ -148,17 +154,17 @@ class SliderArea:
 
         self.color = console.secColor
 
+        # Create all labels for the Slider Area.
         labelsFont = console.labelsFont
         labelsCol = console.labelsCol
 
         self.HzLabel = labelsFont.render('Hz', True, labelsCol)
         self.BPM_Label = labelsFont.render('BPM', True, labelsCol)
 
-        self.labels = [labelsFont.render('FREEZE', True, labelsCol), labelsFont.render('GROOVE', True, labelsCol), 
-                  labelsFont.render('CHAOS', True, labelsCol), labelsFont.render('HARMONY', True, labelsCol), 
-                  labelsFont.render('EEEEEE', True, labelsCol)]
+        labelsText = ['FREEZE', 'GROOVE', 'CHAOS', 'HARMONY', 'EEEEEE']
+        self.labels = [labelsFont.render(text, True, labelsCol) for text in labelsText]
         
-
+        # Create digital display boxes for Hz and BPM.
         self.digitalFont = console.digitalFont
         self.digitalOn = console.digitalOn
 
