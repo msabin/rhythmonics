@@ -1,9 +1,9 @@
 """
-   Run the main event loop for the rhythmonics program.
-   
-   This file imports the local file interface.py to instantiate the GUI
-   console of rhythmonics and runs an event loop to allow interactions
-   with the console, update the console components, and draw the console.
+Run the main event loop for the rhythmonics program.
+
+This file imports the local file interface.py to instantiate the GUI
+console of rhythmonics and runs an event loop to allow interactions
+with the console, update the console components, and draw the console.
 """
 
 import pygame
@@ -40,8 +40,6 @@ killSwitch = console.radioArea.killSwitch
 
 polys = screen.polys
 balls = [poly.ball for poly in polys]
-
-
 
 
 # Begin the clock that will sync movement and sound.
@@ -111,6 +109,7 @@ while not user_done:
                     slider.isSelected = False 
 
                     (beat_offset, ms_per_beat) = slider.updateVolt(beat_offset, clock)
+                    console.draw(window)
 
                 slider.isSelected = False 
 
@@ -137,11 +136,9 @@ while not user_done:
 
     # Draw only the screen directly to the window.  The console only redraws itself for relevant events in the 
     # event loop, but the screen redraws every event loop to update the balls' movements.  Then update the whole
-    # display on the screen.git 
+    # display on the screen.
     screen.draw(window, console.origin)
     pygame.display.flip()
-
-
 
     if SMOOTH_SLIDE:
         # Fade the volume of active oscillators in over event loop runs to maximum volume.  All oscillators are 

@@ -127,20 +127,9 @@ class Screen:
         self.surf.fill(self.color)
 
         for overtone in self.overtones: 
-            poly = overtone.poly
+            overtone.poly.draw(self.surf)
 
-            poly.draw(self.surf)
-
-            # If polygon is actually a circle, then draw tick marks to indicate where ball will make a click sound when passed.
-            tickLength = 5
-            if not poly.isPointy: 
-                for i, vert in enumerate(poly.verts):
-                    xTick = math.cos(math.pi/2 - 2*math.pi * i/len(poly.verts))*tickLength
-                    yTick = math.sin(math.pi/2 - 2*math.pi * i/len(poly.verts))*tickLength
-                    pygame.draw.line(self.surf, (139,72,82), vert - (xTick , -yTick), vert + (xTick, -yTick), 2)
-
-
-            if overtone.active: poly.ball.draw(self.surf)
+            if overtone.active: overtone.poly.ball.draw(self.surf)
 
         targetSurf.blit(self.surf, self.origin + offset)
 
@@ -207,7 +196,8 @@ class SliderArea:
         #Draw Hz display
         surface.blit(self.HzBox, (self.origin[0], self.origin[1]))
 
-        HzDisp = self.digitalFont.render(" " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " ", False, self.digitalOn)
+        HzString = " " + f'{self.overtones[0].Hz:07.2f}'.replace("1", " 1") + " "
+        HzDisp = self.digitalFont.render(HzString, False, self.digitalOn)
         surface.blit(HzDisp, (self.origin[0], self.origin[1]))
 
         surface.blit(self.HzLabel, (self.origin[0]+self.HzBox.get_width()+self.horizontalBuf/2,self.origin[1]))
@@ -279,12 +269,10 @@ class Slider:
 
                 for overtone in self.overtones: overtone.updateHz(Hz, (beat_offset+buffer_time)/ms_per_beat)
 
-                if SMOOTH_SLIDE: 
-                    for overtone in self.overtones: overtone.oscillator.set_volume(0)
-
-                pygame.time.wait(int(max(buffer_time - clock.tick(), 0)))    #wait to play sounds until caught up to extra buffer time
-
-                for overtone in self.overtones: overtone.oscillator.play(loops=-1) #play them all at the same time
+                # Wait to play sounds until we're caught up to the buffer time we gave ourselves and then play them all
+                # in sync at the same time (even though they start off silent).
+                pygame.time.wait(int(max(buffer_time - clock.tick(), 0)))
+                for overtone in self.overtones: overtone.oscillator.play(loops=-1)
 
 
 
