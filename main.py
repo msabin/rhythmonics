@@ -32,13 +32,12 @@ consoleOrigin = windowCenter - consoleCenter
 console = interface.Console(consoleOrigin, consoleSize, Hz)
 
 screen = console.screenArea.screen
-overtones = console.overtones
 slider = console.sliderArea.slider
 radios = console.radioArea.radios
 killSwitch = console.radioArea.killSwitch
 
-polys = screen.polys
-balls = [poly.ball for poly in polys]
+overtones = screen.overtones
+balls = [overtone.poly.ball for overtone in overtones]
 
 
 # Begin the clock that will sync movement and sound.

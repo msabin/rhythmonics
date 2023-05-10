@@ -44,7 +44,7 @@ class Console:
     origin : tuple
         Position relative to window/target Surface that Console will drawn on.
     size : tuple
-        Size of console area as a rectangle.
+        Size of rectangular console area.
     baseColor
         Color of console background, see pygame.Color for supported formats.
     secColor
@@ -168,23 +168,71 @@ class Console:
 
 class ScreenArea:
     """
+    Area for the Screen that displays polygons and the border around it.
+
+    The screen area size and origin accounts for the border and a Screen
+    object is initalized to be a small size and offset origin within the
+    border area.
     
     Attributes
     ----------
-    origin : tuple
-        Position relative to Console origin that this area will be drawn onto.
+    border : pygame.Rect
+        Rectangle used to draw the border around the Screen on the Console.
+    borderRadius : int
+        Radius of corners of `border` to draw a border with rounded corners.
+    bigBorderRadius : int
+        Large radius to draw a very round corner if wanted.
+    borderCol
+        Color to draw `border` rectangle, see pygame.Color for supported formats.
+    screen : Screen
+        Screen object that Polygon objects are drawn on.
+
+    Methods
+    -------
+    draw
+        Draw the screen area (border and screen) on a surface.
     """
+
     def __init__(self, origin, size, screenCol, borderCol, startHz):
+        """
+        Initialize the screen area with a border and a Screen object.
+
+        Initializing the Screen object will creat the Overtone object that
+        the screen will display and the rest of the console will interact with.
+
+        Parameters
+        ----------
+        origin : pygame.Vector2
+            Position relative to Console origin that this area will be drawn onto.
+        size : tuple
+            Size of entire screen area, including border.
+        screenCol
+            Color of screen background, see pygame.Color for supported formats.
+        borderCol
+            Color of border around screen, see pygame.Color for supported formats.
+        startHz : float
+            Positive number of the fundamental Hz to initialize overtones with.
+        """
         self.border = pygame.Rect(origin, size)
         self.borderRadius = 5
         self.bigBorderRad = 40
         self.borderCol = borderCol
 
+        # Offset and size the screen within the border area and instantiate screen.
         screenOrigin = pygame.Vector2(origin) + (45,25)
         screenSize = pygame.Vector2(size) - (90, 76)
         self.screen = Screen(screenOrigin, screenSize, screenCol, startHz)
 
     def draw(self, surf):
+        """
+        Draw the screen area (border and screen) on a surface.
+
+        Parameters
+        ----------
+        surf : pygame.Surface
+            Surface to draw the screen area onto.
+        """
+        # Draw the border on the Surface and then draw have the screen draw itself on top.
         pygame.draw.rect(surf, self.borderCol, self.border, 
                          border_radius=self.borderRadius, 
                          border_bottom_right_radius=self.bigBorderRad)
@@ -192,38 +240,117 @@ class ScreenArea:
         self.screen.draw(surf)
 
 class Screen:
+    """
+    Screen displays polygons and balls and instantiates the console's overtones.
+
+    This class creates and holds the overtones for the console and draws the polygons
+    of those overtones and their balls.  This is where rhythms are visualized at low
+    Hz: balls rhythmically traversing polygons at certain speeds.  It is still 
+    visualized at high speeds, although the balls' paths become blurred at high Hz.
+    This is the main visual component of the console, the rest is for GUI interaction.
+    
+    Attributes
+    ----------
+    origin : pygame.Vector2
+        Position relative to Console origin that this area will be drawn onto.
+    size : pygame.Vector2
+        Size of screen where polygons are displayed.
+    color
+        Color of screen background, see pygame.Color for supported formats.
+    surf : pygame.Surface
+        Surface of screen to draw onto.
+    overtones : list of harmonics.Overtone
+        Overtones whose polygons the screen will display.
+    """
+
     def __init__(self, origin, size, color, startHz):
+        """
+        Initialize the screen, the polygons that will be on it, and the overtones.
+
+        The polygons that will be drawn on the screen are all instantiated here with respect
+        to the screen position.  Polygons are crafted and nested aesthetically but arbitrarily,
+        their layout can be changed here.  Once the polgyons are instantiated they are used
+        to instantiate the attached overtones that the rest of the console will use.
+        
+        Parameters
+        ----------
+        origin
+            Position relative to Console origin that this area will be drawn onto.
+        size
+            Size of screen where polygons are displayed.
+        color
+            Color of screen background, see pygame.Color for supported formats.
+        startHz
+            Positive number of the fundamental Hz to initialize overtones with.
+        """
+        self.origin = origin
         self.size = size
+        self.color = color
         self.surf = pygame.Surface(size)
 
-        self.origin = origin
-        self.color = color
+        center = self.size/2
 
-
-        #Handcraft polygon aesthetics for the screen
+        # Polygon aesthetics and nesting can be crafted here.  This is aesthetic and there
+        # are many possible choices, there is nothing inherent about the choices made here.
         rootColor = (237,199,176)
         thirdColor = (118,150,222)
         fifthColor = (255,151,152)
-        seventhColor = (171,103,114) #(0xb1,0x9c, 0xd8)
+        seventhColor = (171,103,114)
         
-        rootRadius = (.9 * min(size[0], size[1]))/2
-        center = pygame.Vector2(size[0]/2, size[1]/2)
+        rootRadius = (.9 * min(self.size[0], self.size[1]))/2
         
-
+        # Polygons are named by their scale degree relative to the fundamental root frequency, `root1`.
+        # Order is mixed based on which polygons are inscribed in each other since they need to access
+        # their circumscribing Polygon object's `inCirc` attribute.  The first parameter in the 
+        # instantiation of a Polygon object is the number of vertices - i.e. which overtone it is.
         root1 = hmx.Polygon(1,rootRadius, center, rootColor, isPointy=False)
-        root2 = hmx.Polygon(2,rootRadius/math.sqrt(2), center, rootColor, isPointy=False)
-        fifth1 = hmx.Polygon(3, rootRadius/math.sqrt(2), center, fifthColor)
         root3 = hmx.Polygon(4,rootRadius, center, rootColor)
+
+        root2 = hmx.Polygon(2,root3.inCirc, center, rootColor, isPointy=False)
+        fifth1 = hmx.Polygon(3, root3.inCirc, center, fifthColor)
+        fifth2 = hmx.Polygon(6,root3.inCirc, center, fifthColor)
+
         third1 = hmx.Polygon(5,fifth1.inCirc, center, thirdColor)
-        fifth2 = hmx.Polygon(6,rootRadius/math.sqrt(2), center, fifthColor)
+        
         seventh1 = hmx.Polygon(7,third1.inCirc, center, seventhColor)
 
-        self.polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1]
+        polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1]
 
-        numOvertones = len(self.polys)
-        self.overtones = [hmx.Overtone(len(poly.verts), poly, numOvertones, startHz) for poly in self.polys]
+        numOvertones = len(polys)
+        self.overtones = [hmx.Overtone(len(poly.verts), poly, numOvertones, startHz) for poly in polys]
 
-    def draw(self, targetSurf, offset = pygame.Vector2(0,0)):
+    def draw(self, targetSurf, offset=pygame.Vector2(0,0)):
+        """
+        Draw the screen and everything on the screen (polygons and balls) onto a surface.
+
+        All polygons are always drawn and only the balls of active overtones are drawn.  The
+        screen can be offset from its origin but the default is no offset.  The screen origin
+        is relative to the console the screen is on but if the screen is being drawn to a 
+        different surface, such as the main window so the console doesn't have to be redrawn
+        as often as the screen, then the offset should be set accordingly to keep it drawn to
+        the right spot on the console, see Examples.
+        
+        Parameters
+        ----------
+        targetSurf : pygame.Surface
+            Surface to draw the screen onto
+        offset : pygame.Vector2, default=pygame.Vector2(0,0)
+            x, y distances to offset the screen's origin by when drawing.  E.g. If
+            `targetSurf` is the main window, so that the screen is drawn directly to the
+            window instead of the Console surface, that should be accounted for by
+            offsetting our draw position by the console's origin.
+
+        Examples
+        --------
+        To draw on the console, the offset can be ignored.
+
+        >>> screen.draw(console.surf)
+
+        If drawing on the main window, the origin should be offset by the console origin
+        so that it continues to draw relative to its position on the console.
+
+        >>> screen.draw(window, console.origin)
+        """
         self.surf.fill(self.color)
 
         for overtone in self.overtones: 
@@ -232,7 +359,6 @@ class Screen:
             if overtone.active: overtone.poly.ball.draw(self.surf)
 
         targetSurf.blit(self.surf, self.origin + offset)
-
 
 class SliderArea:
     def __init__(self, console, origin, height):
@@ -260,7 +386,7 @@ class SliderArea:
         digitalOff = console.digitalOff
         digitalBG = console.digitalBG
         
-        self.HzBox = self.digitalFont.render(' 8888.88 ', False, digitalOff, digitalBG)  #digital box to print Hz on
+        self.HzBox = self.digitalFont.render(' 8888.88 ', False, digitalOff, digitalBG)
         self.BPM_Box = self.digitalFont.render(' 888888 ', False, digitalOff, digitalBG)
         
 
@@ -281,8 +407,6 @@ class SliderArea:
 
 
         self.slider = Slider(sliderPos, sliderSize, self.color, self.overtones, sliderMiny, sliderMaxy)
-
-                
 
     def draw(self, surface):
         if TYPESET: pygame.draw.rect(surface, (0,0,0), (self.origin, (self.HzBox.get_width() + self.horizontalBuf + self.BPM_Label.get_width(), self.height)), 1)
@@ -313,7 +437,6 @@ class SliderArea:
         surface.blit(BPM_Disp, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
 
         surface.blit(self.BPM_Label, (self.origin[0]+self.BPM_Box.get_width()+self.horizontalBuf/2,self.origin[1] + self.height - self.BPM_Box.get_height()))
-
 
 class Slider:
     def __init__(self, position, size, color, overtones, miny, maxy):
@@ -387,7 +510,6 @@ class Slider:
         self.handle = pygame.Rect(self.pos - self.size/2, self.size)
         pygame.draw.rect(surface, self.color, self.handle)
 
-
 class RadioArea:
     def __init__(self, console, origin, size):
 
@@ -432,7 +554,6 @@ class RadioArea:
 
         self.killSwitch.draw(surface)
         surface.blit(self.killSwitchLabel, self.killSwitch.pos + (self.horizontalBuf - 2, -self.killSwitch.size[1]/2 - 3))
-
 
 class RadioBtn:
     def __init__(self, position, radius, overtone):
@@ -490,7 +611,6 @@ class RadioBtn:
 
         pygame.draw.circle(surface, self.borderCol, self.pos, self.radius + self.borderWidth, 2)
 
-
 class KillSwitch:
     def __init__(self, position, size, color, radios):
         self.pos = pygame.math.Vector2(position)
@@ -528,7 +648,6 @@ class KillSwitch:
             pygame.draw.rect(surface, self.color, self.button, 0, self.borderRad)
         else:
             pygame.draw.rect(surface, self.color, ((self.pos-self.pressedSize/2), self.pressedSize), 0, self.borderRad-1)
-
 
 class RatioDisp:
     def __init__(self, console, origin):
