@@ -123,6 +123,15 @@ while not user_done:
                     radio.press()
                     console.draw(window)
 
+            if event.key == pygame.K_m:
+                killSwitch.press()
+                console.draw(window)
+
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_m and killSwitch.isPressed:
+                killSwitch.press()
+                console.draw(window)
+
 
     # Update how many milliseconds(ms) we are into a beat, tick the clock, and then update the positions of all the active balls on polygons.
     if ms_per_beat != 0:

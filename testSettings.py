@@ -1,3 +1,5 @@
 # CONSTANTS
-SMOOTH_SLIDE = False
+SMOOTH_SLIDE = True
 TYPESET = False
+
+START_HZ = .5

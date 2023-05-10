@@ -230,19 +230,24 @@ class Slider:
 
         self.handle = pygame.Rect(self.pos - self.size/2, self.size)
 
+        self.quarterTarget = 1 # Up to quarter of the way, linearly scale up to 1Hz=60bpm.
+        self.halfTarget = 275/60   # Linearly scales up to 275/60Hz = 275bpm
+        self.threeQuartTarget = 110
+        self.topTarget = 2000
+
     def updateVolt(self, beat_offset, clock):  #slider's position/"voltage" affects VCOs' Hz. Use clock to find phase
 
         HzScale = abs(self.pos[1] - self.maxy)/(self.maxy - self.miny)
 
         if HzScale <= .25:
-            Hz = HzScale/.25                                                    #Up to quarter of the way, linear scales up to 1Hz=60bpm
-            if Hz <= .02: Hz = 0                                            #if it's too slow, just set it to 0
+            Hz = self.quarterTarget * HzScale/.25  
+            if Hz <= .02: Hz = 0  # Too low Hz take too much time to make Sound object, just make it 0.
         elif HzScale <= .5:
-            Hz = (1-(HzScale -.25)/.25) +   275/60 * (HzScale-.25)/.25     #linear scales up to 275/60Hz = 275bpm
+            Hz = (1-(HzScale -.25)/.25) +   self.halfTarget * (HzScale-.25)/.25
         elif HzScale <= .75:
-            Hz = 275/60 + (110-275/60)*math.log(1 + (HzScale - .5)/.25, 2)  #log scales up to 110Hz (4th harmonic/2nd octave will be 440Hz)    
+            Hz = 275/60 + (110-275/60)*math.log(1 + (HzScale - .5)/.25, 2)  # log scales up to 110Hz (4th harmonic/2nd octave will be 440Hz)    
         else:   
-            Hz = 110 + (2000-110)*math.log(1 + (HzScale - .75)/.25, 2)        #caps at 2000 Hz (seventh harmonic will be at 14000Hz)
+            Hz = 110 + (2000-110)*math.log(1 + (HzScale - .75)/.25, 2)  # Caps at 2000 Hz (seventh harmonic will be at 14000Hz)
             
 
         if not SMOOTH_SLIDE:
