@@ -17,7 +17,7 @@ Together, these comprise the visual and audio components of a frequency for rhyt
 Classes
 -------
 Overtone
-    Stores core attributes of an Overtone, including Sound and Polygon objects.
+    Store core attributes of an Overtone, including Sound and Polygon objects.
 Polygon
     Regular polygon (or circle) that has an attached Ball.
 Ball
@@ -40,7 +40,7 @@ SMOOTH_SLIDE = testSettings.SMOOTH_SLIDE
 
 class Overtone:
     """
-    Stores core attributes of an Overtone, including corresponding Sound object and Polygon object.
+    Store core attributes of an Overtone, including corresponding Sound object and Polygon object.
 
     This class mainly stores attributes associated with an overtone, mostly crucially the `Hz` and 
     `phase`, and has a method to update these two core defining attributes.  Further, Overtone has

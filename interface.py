@@ -4,6 +4,8 @@ Module for GUI
 Classes
 -------
 Console
+    Wrap all of the GUI elements and decide how they are displayed as a console.
+ScreenArea
 Screen
 SliderArea
 Slider
@@ -11,6 +13,10 @@ RadioArea
 RadioBtn
 KillSwitch
 RatioDisp
+
+See Also
+--------
+harmonics.py : Module defining Overtone objects that this module acts as a GUI for.
 """
 import pygame
 import math
@@ -24,11 +30,14 @@ TYPESET = testSettings.TYPESET
 
 class Console:
     """
-    This class wraps all of the GUI elements and decides how they are displayed into a console.
+    Wrap all of the GUI elements and decide how they are displayed as a console.
     
     This class sets up the console aesthetics (e.g. colors, fonts, layout) and initializes 
-    and collects all of its areas: Screen, SliderArea, RadioArea, and RatioDisp.  It also
+    and collects all of its areas: ScreenArea, SliderArea, RadioArea, and RatioDisp.  It also
     has a method for drawing itself and all of its areas onto a Surface.
+
+    Its initialization will also create the Overtone objects that the console acts as a GUI for
+    displaying, voicing, and interacting with.
 
     Attributes
     ----------
@@ -42,10 +51,10 @@ class Console:
         Color of console foreground pieces, see pygame.Color for supported formats.
     surf : pygame.Surface
         Surface to draw console and its components onto.
-    screen : Screen
-        Screen object for displaying polygons to.
+    screenArea : ScreenArea
+        Area for screen that displays polygons and the border around it.
     overtones : list of harmonics.Overtone
-        Overtones that the console is for displaying and allowing interaction with.
+        Overtones that the console displays/voices and allows interaction with.
     labelsFont : pygame.font.Font
         Font all labels on the console are written in.
     labelsCol
@@ -70,12 +79,15 @@ class Console:
     draw
         Draw console and all of its components/areas.
     """
+
     def __init__(self, origin, size, startHz):
         """
         Initialize the console and all of its area components it wraps.
 
         Initialize all of the console aesthetics (e.g. colors, fonts, layout) and initialize 
-        and collect all of its areas: Screen, SliderArea, RadioArea, and RatioDisp.
+        and collect all of its areas: ScreenArea, SliderArea, RadioArea, and RatioDisp.  The
+        ScreenAreas initialization will instantiate the Polygon objects to display and, with
+        them, the Overtone objects that the console acts as GUI for interacting with.
 
         Parameters
         ----------
@@ -89,18 +101,21 @@ class Console:
         self.origin = origin
         self.size = pygame.Vector2(size)
 
-        self.baseColor = (0xff,0xbc,0xcf) #(169,193,255)
+        self.baseColor = (0xff,0xbc,0xcf)
         self.secColor = (0,0x93,0x90)
 
         self.surf = pygame.Surface(self.size)
 
-        # Initialize the screen and get the overtones from it afterwards.
-        screenColor = (112, 198, 169)
+        # Initialize the screen area that displays the polygons.  The Screen both creates the Polygon objects
+        # and initializes all Overtone objects based on them that the console and all if its components will
+        # use and interact with.  All other areas of the console can now be instantiated after this to interact
+        # with these overtones.
         screenAreaSize = pygame.Vector2(515, 425)
+        screenColor = (112, 198, 169)
 
         screenCenter = screenAreaSize/2
         consoleCenter = self.size/2
-        screenAreaOrigin = consoleCenter - screenCenter - (0,35)
+        screenAreaOrigin = consoleCenter - screenCenter - (0,22)
         self.screenArea = ScreenArea(screenAreaOrigin, screenAreaSize, screenColor, self.secColor, startHz)
 
         self.overtones = self.screenArea.screen.overtones
@@ -108,7 +123,7 @@ class Console:
         # Set up all the fonts of the console so console areas can use them.
         labelsFontSize = 18
         self.labelsFont = pygame.font.Font('fonts/Menlo.ttc', labelsFontSize)
-        self.labelsCol = (125,58,68) #(76,100,161)
+        self.labelsCol = (125,58,68)
         
         digitalFontSize = 30
         self.digitalFont = pygame.font.Font('fonts/digital-7 (mono).ttf', digitalFontSize)
@@ -129,7 +144,6 @@ class Console:
         # Initialize area for digital displays of ratios between active overtones.
         ratioOrigin = screenAreaOrigin + (153, screenAreaSize[1] + 30)
         self.ratioDisp = RatioDisp(self, ratioOrigin)
-
 
     def draw(self, targetSurf):
         """
@@ -167,7 +181,7 @@ class ScreenArea:
         self.borderCol = borderCol
 
         screenOrigin = pygame.Vector2(origin) + (45,25)
-        screenSize = pygame.Vector2(size) - (90, 75)
+        screenSize = pygame.Vector2(size) - (90, 76)
         self.screen = Screen(screenOrigin, screenSize, screenCol, startHz)
 
     def draw(self, surf):
