@@ -5,7 +5,6 @@ This file imports the local file interface.py to instantiate the GUI
 console of rhythmonics and runs an event loop to allow interactions
 with the console, update the console components, and draw the console.
 """
-
 import pygame
 import math
 
@@ -32,7 +31,7 @@ consoleCenter = pygame.Vector2(consoleSize[0]/2, consoleSize[1]/2)
 consoleOrigin = windowCenter - consoleCenter
 console = interface.Console(consoleOrigin, consoleSize, Hz)
 
-screen = console.screen
+screen = console.screenArea.screen
 overtones = console.overtones
 slider = console.sliderArea.slider
 radios = console.radioArea.radios
@@ -56,17 +55,17 @@ radios[2].press()
 console.draw(window)
 
 # Set variables to begin the main event loop
-user_done = False
+userDone = False
 
 ms_per_beat = 1000/Hz  # Set how many milliseconds are in a beat.
 beat_offset = 0
 
 # Begin the event loop that runs until a user quits.
-while not user_done:
+while not userDone:
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            user_done = True
+            userDone = True
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
@@ -126,6 +125,9 @@ while not user_done:
             if event.key == pygame.K_m:
                 killSwitch.press()
                 console.draw(window)
+
+            if event.key == pygame.K_q:
+                userDone = True
 
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_m and killSwitch.isPressed:

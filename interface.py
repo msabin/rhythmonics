@@ -1,3 +1,17 @@
+"""
+Module for GUI
+
+Classes
+-------
+Console
+Screen
+SliderArea
+Slider
+RadioArea
+RadioBtn
+KillSwitch
+RatioDisp
+"""
 import pygame
 import math
 
@@ -10,86 +24,158 @@ TYPESET = testSettings.TYPESET
 
 class Console:
     """
-        Test
-        
-        Trying some things here
+    This class wraps all of the GUI elements and decides how they are displayed into a console.
+    
+    This class sets up the console aesthetics (e.g. colors, fonts, layout) and initializes 
+    and collects all of its areas: Screen, SliderArea, RadioArea, and RatioDisp.  It also
+    has a method for drawing itself and all of its areas onto a Surface.
+
+    Attributes
+    ----------
+    origin : tuple
+        Position relative to window/target Surface that Console will drawn on.
+    size : tuple
+        Size of console area as a rectangle.
+    baseColor
+        Color of console background, see pygame.Color for supported formats.
+    secColor
+        Color of console foreground pieces, see pygame.Color for supported formats.
+    surf : pygame.Surface
+        Surface to draw console and its components onto.
+    screen : Screen
+        Screen object for displaying polygons to.
+    overtones : list of harmonics.Overtone
+        Overtones that the console is for displaying and allowing interaction with.
+    labelsFont : pygame.font.Font
+        Font all labels on the console are written in.
+    labelsCol
+        Color of font of console's labels, see pygame.Color for supported formats.
+    digitalFont : pygame.font.Font
+        Font on the console's digital displays.
+    digitalOn
+        Color of digital font when "lit up," see pygame.Color for supported formats.
+    digitalOff
+        Color of idle digital font when not "lit," see pygame.Color for supported formats.
+    digitalBG
+        Background color of digital displays, see pygame.Color for supported formats.
+    sliderArea : SliderArea
+        Area for displaying and interacting with slider.
+    radioArea : RadioArea
+        Area for displaying and interacting with radio buttons and kill switch.
+    ratioDisp : RatioDisp
+        Area for digital displays of ratios between active overtones.
+
+    Methods
+    -------
+    draw
+        Draw console and all of its components/areas.
     """
     def __init__(self, origin, size, startHz):
-        """Test3"""
-        self.surf = pygame.Surface(size)
+        """
+        Initialize the console and all of its area components it wraps.
 
+        Initialize all of the console aesthetics (e.g. colors, fonts, layout) and initialize 
+        and collect all of its areas: Screen, SliderArea, RadioArea, and RatioDisp.
+
+        Parameters
+        ----------
+        origin : tuple
+            Origin of the console's top left corner to display.
+        size : tuple
+            Size of the console area to display.
+        startHz : float
+            Positive number of the fundamental Hz the console will begin with.
+        """
         self.origin = origin
+        self.size = pygame.Vector2(size)
 
         self.baseColor = (0xff,0xbc,0xcf) #(169,193,255)
         self.secColor = (0,0x93,0x90)
 
-        consoleSize = pygame.Vector2(size)
+        self.surf = pygame.Surface(self.size)
 
-        self.console = pygame.Rect((0,0), consoleSize)
-
-
-        screenSize = (425, 350)
-
-        screenCenter = pygame.Vector2(screenSize[0]/2, screenSize[1]/2)
-        consoleCenter = consoleSize/2
-        screenOrigin = consoleCenter - screenCenter - (0,35)
-
+        # Initialize the screen and get the overtones from it afterwards.
         screenColor = (112, 198, 169)
-        self.screen = Screen(screenOrigin, screenSize, screenColor, startHz)
+        screenAreaSize = pygame.Vector2(515, 425)
 
-        self.overtones = self.screen.overtones
+        screenCenter = screenAreaSize/2
+        consoleCenter = self.size/2
+        screenAreaOrigin = consoleCenter - screenCenter - (0,35)
+        self.screenArea = ScreenArea(screenAreaOrigin, screenAreaSize, screenColor, self.secColor, startHz)
+
+        self.overtones = self.screenArea.screen.overtones
      
-
-    
+        # Set up all the fonts of the console so console areas can use them.
         labelsFontSize = 18
-        #path = pygame.font.match_font('Abadi MT Condensed Extra Bold')
         self.labelsFont = pygame.font.Font('fonts/Menlo.ttc', labelsFontSize)
         self.labelsCol = (125,58,68) #(76,100,161)
         
-
         digitalFontSize = 30
         self.digitalFont = pygame.font.Font('fonts/digital-7 (mono).ttf', digitalFontSize)
-
         self.digitalOn = (0,0xcf,0xdd)
         self.digitalOff = (0,0x55,0x63)
         self.digitalBG = (0,0x35,0x55)
 
-
+        # Initialize slider area.
         sliderAreaOrigin = (55, 45)
-        sliderAreaHeight = consoleSize[1]*.85
-
-        #Slider's "voltage" will control VCOs (oscillators) of the overtones
+        sliderAreaHeight = self.size[1]*.85
         self.sliderArea = SliderArea(self, sliderAreaOrigin, sliderAreaHeight)
 
-
+        # Initialize area for radio buttons and kill switch.
         radioAreaOrigin = (810, 65)
         radioAreaSize = (135 , 350)
-
         self.radioArea = RadioArea(self, radioAreaOrigin, radioAreaSize) 
 
-
-
-        ratioOrigin = screenOrigin + (108, screenSize[1] + 80)
-        #ratioLength = screenSize[0]-40
-
+        # Initialize area for digital displays of ratios between active overtones.
+        ratioOrigin = screenAreaOrigin + (153, screenAreaSize[1] + 30)
         self.ratioDisp = RatioDisp(self, ratioOrigin)
 
 
     def draw(self, targetSurf):
-        pygame.draw.rect(self.surf, self.baseColor, self.console, border_radius=50)
+        """
+        Draw the console and all of its components onto a Surface.
 
-        pygame.draw.rect(self.surf, self.secColor, (self.screen.origin - (45,25), (self.screen.size[0]+90,self.screen.size[1]+75)), border_radius=5, border_bottom_right_radius=40)
-        self.screen.draw(self.surf)
+        Parameters
+        ----------
+        targetSurf : pygame.Surface
+            Surface to blit the console's surface to.
+        """
+        # Clear screen by drawing console base onto console's surface.
+        pygame.draw.rect(self.surf, self.baseColor, ((0,0), self.size), border_radius=50)
 
+        # Draw all of console's areas onto console's surface.
+        self.screenArea.draw(self.surf)
         self.sliderArea.draw(self.surf)
-        
         self.radioArea.draw(self.surf)
-
         self.ratioDisp.draw(self.surf)
 
+        # Blit console's surface onto the target surface/window.
         targetSurf.blit(self.surf, self.origin)
 
+class ScreenArea:
+    """
+    
+    Attributes
+    ----------
+    origin : tuple
+        Position relative to Console origin that this area will be drawn onto.
+    """
+    def __init__(self, origin, size, screenCol, borderCol, startHz):
+        self.border = pygame.Rect(origin, size)
+        self.borderRadius = 5
+        self.bigBorderRad = 40
+        self.borderCol = borderCol
 
+        screenOrigin = pygame.Vector2(origin) + (45,25)
+        screenSize = pygame.Vector2(size) - (90, 75)
+        self.screen = Screen(screenOrigin, screenSize, screenCol, startHz)
+
+    def draw(self, surf):
+        pygame.draw.rect(surf, self.borderCol, self.border, 
+                         border_radius=self.borderRadius, 
+                         border_bottom_right_radius=self.bigBorderRad)
+
+        self.screen.draw(surf)
 
 class Screen:
     def __init__(self, origin, size, color, startHz):
