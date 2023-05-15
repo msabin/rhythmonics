@@ -48,8 +48,7 @@ clock.tick()
 for overtone in overtones: overtone.oscillator.play(loops=-1)
 
 # Turn the second and third overtones on for the user to begin with and draw the console.
-radios[1].press()
-radios[2].press()
+radios[0].press()
 
 console.draw(window)
 

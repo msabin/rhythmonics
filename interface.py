@@ -123,7 +123,7 @@ class Console:
         # Set up all the fonts of the console so console areas can use them.
         labelsFontSize = 18
         self.labelsFont = pygame.font.Font('fonts/Menlo.ttc', labelsFontSize)
-        self.labelsCol = (125,58,68)
+        self.labelsCol = (135,68,78)
         
         digitalFontSize = 30
         self.digitalFont = pygame.font.Font('fonts/digital-7 (mono).ttf', digitalFontSize)
@@ -138,11 +138,11 @@ class Console:
 
         # Initialize area for radio buttons and kill switch.
         radioAreaOrigin = (810, 65)
-        radioAreaSize = (135 , 350)
+        radioAreaSize = (135 , 390)
         self.radioArea = RadioArea(self, radioAreaOrigin, radioAreaSize) 
 
         # Initialize area for digital displays of ratios between active overtones.
-        ratioOrigin = screenAreaOrigin + (153, screenAreaSize[1] + 30)
+        ratioOrigin = screenAreaOrigin + (138, screenAreaSize[1] + 30)
         self.ratioDisp = RatioDisp(self, ratioOrigin)
 
     def draw(self, targetSurf):
@@ -297,14 +297,16 @@ class Screen:
         fifthColor = (255,151,152)
         seventhColor = (171,103,114)
         
-        rootRadius = (.9 * min(self.size[0], self.size[1]))/2
+        rootRadius = (.94 * min(self.size[0], self.size[1]))/2
         
         # Polygons are named by their scale degree relative to the fundamental root frequency, `root1`.
         # Order is mixed based on which polygons are inscribed in each other since they need to access
         # their circumscribing Polygon object's `inCirc` attribute.  The first parameter in the 
         # instantiation of a Polygon object is the number of vertices - i.e. which overtone it is.
-        root1 = hmx.Polygon(1,rootRadius, center, rootColor, isPointy=False)
-        root3 = hmx.Polygon(4,rootRadius, center, rootColor)
+        root4 = hmx.Polygon(8, rootRadius, center, rootColor)
+
+        root1 = hmx.Polygon(1,root4.inCirc-10, center, rootColor, isPointy=False)
+        root3 = hmx.Polygon(4,root4.inCirc-10, center, rootColor)
 
         root2 = hmx.Polygon(2,root3.inCirc, center, rootColor, isPointy=False)
         fifth1 = hmx.Polygon(3, root3.inCirc, center, fifthColor)
@@ -314,7 +316,7 @@ class Screen:
         
         seventh1 = hmx.Polygon(7,third1.inCirc, center, seventhColor)
 
-        polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1]
+        polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1, root4]
 
         numOvertones = len(polys)
         self.overtones = [hmx.Overtone(len(poly.verts), poly, numOvertones, startHz) for poly in polys]
@@ -361,6 +363,26 @@ class Screen:
         targetSurf.blit(self.surf, self.origin + offset)
 
 class SliderArea:
+    """
+    
+    
+    Attributes
+    ----------
+    origin
+    height
+    overtones
+    color
+    HzLabel
+    BPM_Label
+    labels
+    digitalFont
+    digitalOn
+    HzBox
+    BPM_Box
+    horizontalBuf
+    slider
+    """
+    
     def __init__(self, console, origin, height):
         self.origin = origin
         self.height = height
@@ -371,13 +393,13 @@ class SliderArea:
 
         # Create all labels for the Slider Area.
         labelsFont = console.labelsFont
-        labelsCol = console.labelsCol
+        self.labelsCol = console.labelsCol
 
-        self.HzLabel = labelsFont.render('Hz', True, labelsCol)
-        self.BPM_Label = labelsFont.render('BPM', True, labelsCol)
+        self.HzLabel = labelsFont.render('Hz', True, self.labelsCol)
+        self.BPM_Label = labelsFont.render('BPM', True, self.labelsCol)
 
         labelsText = ['FREEZE', 'GROOVE', 'CHAOS', 'HARMONY', 'EEEEEE']
-        self.labels = [labelsFont.render(text, True, labelsCol) for text in labelsText]
+        self.labels = [labelsFont.render(text, True, self.labelsCol) for text in labelsText]
         
         # Create digital display boxes for Hz and BPM.
         self.digitalFont = console.digitalFont
@@ -399,8 +421,8 @@ class SliderArea:
         sliderMiny = self.origin[1] + self.HzBox.get_height() + verticalBuf
         sliderMaxy = self.origin[1] + self.height - self.BPM_Box.get_height() - verticalBuf
         
-        labelsWidth = max([label.get_width() for label in self.labels])
-        sliderOffset = self.origin[0] + labelsWidth + self.horizontalBuf + sliderSize[0]
+        self.labelsWidth = max([label.get_width() for label in self.labels])
+        sliderOffset = self.origin[0] + self.labelsWidth + self.horizontalBuf + sliderSize[0]
         sliderStart = .25        #slider knob starts at this fraction of the slider range
 
         sliderPos = pygame.Vector2(sliderOffset, sliderMaxy-sliderStart*(sliderMaxy-sliderMiny))
@@ -428,7 +450,15 @@ class SliderArea:
 
         #Draw slider labels
         for i, label in enumerate(self.labels):
-            surface.blit(label, (self.origin[0], (self.slider.maxy - label.get_height()/2) - (i/4)*(self.slider.maxy - self.slider.miny))) 
+            fntHeight = label.get_height()
+            xPos = self.origin[0]
+            yPos = (self.slider.maxy - fntHeight/2) - (i/4)*(self.slider.maxy - self.slider.miny)
+
+            surface.blit(label, (xPos, yPos)) 
+
+            xOffset = xPos + self.labelsWidth + 10
+            trianglePoints = [(xOffset, yPos+3), (xOffset, yPos+fntHeight-3), (xOffset+5, yPos+fntHeight/2)]
+            pygame.draw.polygon(surface, self.labelsCol, trianglePoints)
 
         #Draw BPM display
         surface.blit(self.BPM_Box, (self.origin[0], self.origin[1] + self.height - self.BPM_Box.get_height()))
@@ -522,7 +552,7 @@ class RadioArea:
             ]
         
         killSwitchSize = (15,15)
-        killSwitchOrigin = (origin[0], origin[1] + size[1] + 60)
+        killSwitchOrigin = (origin[0], origin[1] + size[1] + 55)
         self.killSwitch = KillSwitch(killSwitchOrigin, killSwitchSize, console.secColor, self.radios)
 
         self.killSwitchLabel = console.labelsFont.render('SSHHHHHHH!', True, console.labelsCol)
