@@ -40,6 +40,9 @@ overtones = screen.overtones
 balls = [overtone.poly.ball for overtone in overtones]
 
 
+# Get enough sound channels to play all the overtones plus the kill switch sound.
+pygame.mixer.set_num_channels(len(overtones)+1)
+
 # Begin the clock that will sync movement and sound.
 clock = pygame.time.Clock()
 clock.tick()
