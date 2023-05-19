@@ -13,9 +13,9 @@ import pygame
 import math
 
 import interface
-import testSettings
+import config
 
-SMOOTH_SLIDE = testSettings.SMOOTH_SLIDE
+SMOOTH_SLIDE = config.SMOOTH_SLIDE
 
 # Initialize pygame's mixer to be a mono channel then initialize the rest of pygame.
 pygame.mixer.init(channels=1)

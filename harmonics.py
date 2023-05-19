@@ -34,9 +34,9 @@ import pygame
 import numpy as np
 import math
 
-import testSettings
+import config
 
-SMOOTH_SLIDE = testSettings.SMOOTH_SLIDE
+SMOOTH_SLIDE = config.SMOOTH_SLIDE
 
 class Overtone:
     """

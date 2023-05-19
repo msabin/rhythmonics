@@ -1,5 +1,28 @@
 """
-Module for GUI
+Module for all GUI of rhythmonics project, wrapped in a console aesthetic.
+
+This module contains and lays out all GUI components for interacting with
+the Overtone objects and all sound and math simulations of the harmonics
+module of rhythmonics.  The GUI components are modular and can be added to
+so long as all are added as attributes of the Console class as this wraps
+the entire GUI and is what is interacted with in the main event loop of
+rhythmonics.
+
+While the harmonics module creates all the conceptual simulations of the
+Overtones, this module visualizes, makes audible, and allows for interaction
+with those objects.
+
+The console is meant to be conceptually illustrative in its own right as
+well, however, and each area of the console is meant to further convey
+the formal equivalence of polyrhythms and harmony: Most centrally, the screen
+conveys movement, time, and speed, turning a polygon-based rhythm into a pitch.
+The slider area shows a clear gradient between rhythm and pitch, where it
+can be read in BPM or Hz simultaneously.  The radio buttons pictorally show
+the overtone sine waves correspond to the polygon rhythms.  And the ratios
+between active overtones can both be read as polyrhythm ratios and as
+ratio between frequency pitches, making clear how polyrhythms and harmonies
+are one and the same as the slider moves from low Hz to high Hz for the same
+ratios.
 
 Classes
 -------
@@ -12,8 +35,11 @@ Screen
 SliderArea
     Area for displaying and interacting with the Slider.
 Slider
+    Draggable slider position updates the Hz of the overtones.
 RadioArea
+    Area containing all radio buttons and their kill switch.
 RadioBtn
+    Radio button that controls the `active` status of an Overtone.
 KillSwitch
     Killswitch button that turns off all radio buttons.
 RatioDisp
@@ -27,10 +53,10 @@ import pygame
 import math
 
 import harmonics as hmx
-import testSettings
+import config
 
-SMOOTH_SLIDE = testSettings.SMOOTH_SLIDE
-TYPESET = testSettings.TYPESET
+SMOOTH_SLIDE = config.SMOOTH_SLIDE
+TYPESET = config.TYPESET
 
 
 class Console:
@@ -420,7 +446,7 @@ class SliderArea:
         Parameters
         ----------
         console : Console
-            Console that the the slider controls and is a component of.
+            Console that the slider controls and is a component of.
         origin : pygame.Vector2
             Position relative to Console origin that this area will be drawn onto.
         height : int
@@ -526,7 +552,13 @@ class SliderArea:
 
 class Slider:
     """
-    
+    Slider can be dragged and its position updates the Hz of the overtones.
+
+    This class creates a slider handle whose position controls the Hz of the
+    console's overtones.  This class' `updateVolt` method defines how the
+    position of the slider is translated into voltage for the fundamental
+    frequency for the overtones.
+
     Attributes
     ----------
     pos : pygame.Vector2
@@ -572,7 +604,12 @@ class Slider:
 
     def __init__(self, position, size, color, overtones, miny, maxy):
         """
-        Initialize the
+        Initialize the slider and the target Hz values it should hit.
+
+        Create a slider handle, a boolean of whether it is currently selected, and
+        the target Hz values at the quarter marks of the slider track that the slider
+        should interpolate between when updating the Hz of the fundamental frequency
+        of the overtones.
 
         Parameters
         ----------
@@ -625,7 +662,21 @@ class Slider:
 
     def updateVolt(self, beat_offset, clock):
         """
-        slider's position/"voltage" affects VCOs' Hz. Use clock to find phase
+        Update the Hz of all overtones based on the slider's position.
+
+        The slider has target Hz values to be assigned at the quarter marks of the
+        slider and either scales linearly or logarithmically towards those values
+        depending on whether the Hz is in a range that sounds like discrete rhythms
+        or a continuous pitch, respectively.  This function updates the Hz of all 
+        the overtones according to the scaling based on where the slider handle is 
+        positioned.
+
+        This function uses takes as parameters the number of milliseconds since the
+        last beat, `beat_offset`, and the main event loop's `clock` to make sure the
+        the phase of the sound waves matches the beat offset so that the sound and
+        graphics of the console system are matched up.  The new `beat_offset` and 
+        number of milliseconds in a beat, `ms_per_beat`, (updated with the new Hz)
+        are returned to keep the event loop in sync with the sound.
 
         Parameters
         ----------
@@ -640,6 +691,16 @@ class Slider:
             Number of milliseconds since last beat occurred.
         ms_per_beat : int
             Number of milliseconds in a beat.
+
+        Notes
+        -----
+        The name `updateVolt` is used to conceptually capture the analog sound systems
+        this console conceptually emulates: Sounds are produced by the harmonics.Oscillator
+        function which is inspired by analog circuits called Voltage-Controlled Oscillators 
+        (VCOs) which create a sound wave at a frequency that depends on the voltage supplied
+        to it.  Conceptually, the slider is providing the voltage here and speeding up or
+        slowing down the VCO, and thus increasing or decreasing the pitch of the sound, 
+        respectively.  
         """
         # Translate the slider position to the new Hz.
         HzScale = abs(self.pos[1] - self.maxy)/(self.maxy - self.miny)  # [0,1] value of where slider is on track (1 is top).
@@ -710,39 +771,61 @@ class Slider:
 
 class RadioArea:
     """
+    Area containing all radio buttons, sine wave graphics, and kill switch.
+
+    This area has radio buttons that allow for turning each overtone on or of - i.e.
+    toggling the overtone `active` boolean attribute.  It has sine waves to graphically
+    represent the overtone next to its associated radio button.  And there is a kill
+    switch button that allows all the radio buttons to be turned off at once. 
     
     Attributes
     ----------
-    origin
-    size
-    radios
-    killSwitch
+    origin : pygame.Vector2
+        Position relative to Console origin that this area will be drawn onto.
+    size : pygame.Vector2
+        Size of the radio area.
+    radios : list of RadioBtn
+        A radio button corresponding to each overtone of the Console.
+    sines : list of pygame.Surface
+        Each surface has a sine wave of an overtone drawn on it.
+    killSwitch : KillSwitch
+        Kill switch for turning off all radio buttons.
     killSwitchLabel : pygame.Surface
+        Surface with a label for the kill switch rendered onto it.
 
     Methods
     -------
     draw
         Draw the radio button area onto a surface.
     """
+
     def __init__(self, console, origin, size):
         """
+        Initialize the radio area: create radio and kill switch buttons, and draw sine waves.
+
+        Make a radio button for each overtone and draw a sine wave representing the overtone on a
+        surface.  Create a kill switch and a label for the kill switch.
+
         Parameters
         ----------
-        console
-        origin
-        size
+        console : Console
+            Console that the radio area is a component of and controls.
+        origin : tuple
+            Position relative to Console origin that this area will be drawn onto.
+        size : tuple
+            Size of the radio area.
         """
-        self.origin = origin
-        self.size = size
+        self.origin = pygame.Vector2(origin)
+        self.size = pygame.Vector2(size)
 
         # For each overtone create a radio button and draw a representative sine wave.
         self.radios = []
         self.sines = []
-        
-        radioRad = 5
 
-        self.horizontalBuf = 20
         totalOvertones = len(console.overtones)
+        self.horizontalBuf = 20
+
+        radioRad = 5
 
         # Parameters for drawing sine waves
         sineLength = size[0] - self.horizontalBuf
@@ -760,22 +843,23 @@ class RadioArea:
             self.radios.append(radio)
 
             # Draw picture of the sine wave of the overtone.
-            sineSurface = pygame.Surface((sineLength, peakHeight*2))
-            sineSurface.set_colorkey((0,0,0))
+            yOffset = peakHeight+tickLength  # Put sine wave (w/ tick mark) in middle of the surface.
+            sineSurface = pygame.Surface((sineLength, yOffset*2))
+            sineSurface.fill(console.baseColor)
 
             wave = []
             for i in range(sampRate):
                 xVal = (i/sampRate)*sineLength
                 yVal = -peakHeight*math.sin(2*math.pi * i/sampRate * overtoneNum/2)
 
-                wave.append((xVal,yVal))
+                wave.append((xVal,yVal+yOffset))
 
             pygame.draw.aalines(sineSurface, sineCol, False, wave)
 
             # Draw a tick on each of the sine wave's peaks (pictorally represent rhythm at low Hz).
             for i in range(overtoneNum):
                 peakOffset = (2*i+1)*sineLength/(overtoneNum*2)
-                peakParity = peakHeight*(-1)**(i+1)
+                peakParity = peakHeight*(-1)**(i+1) + yOffset
 
                 tickStart = (peakOffset, peakParity + tickLength/2)
                 tickEnd = (peakOffset, peakParity - tickLength/2)
@@ -792,6 +876,11 @@ class RadioArea:
 
     def draw(self, surface):
         """
+        Draw the radio area: Radio buttons, sine waves, and kill switch.
+
+        For each overtone, draw its radio button and a sine wave representing it next to
+        the button.  Draw the kill switch for the radio buttons underneath them all.
+
         Parameters
         ----------
         surface : pygame.Surface
@@ -802,11 +891,11 @@ class RadioArea:
         for radio, sine in zip(self.radios, self.sines):
             radio.draw(surface)
 
-            surface.blit(sine, radio.pos + (self.horizontalBuf, -radio.radius))
-
+            surface.blit(sine, radio.pos + (self.horizontalBuf, -sine.get_height()/2))
 
         self.killSwitch.draw(surface)
-        surface.blit(self.killSwitchLabel, self.killSwitch.pos + (self.horizontalBuf-2, -self.killSwitch.size[1]/2-3))
+        labelOffset = (self.horizontalBuf-2, -self.killSwitch.size[1]/2 - 3)
+        surface.blit(self.killSwitchLabel, self.killSwitch.pos + labelOffset)
 
 class RadioBtn:
     """
