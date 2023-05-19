@@ -4,6 +4,10 @@ Run the main event loop for the rhythmonics program.
 This file imports the local file interface.py to instantiate the GUI
 console of rhythmonics and runs an event loop to allow interactions
 with the console, update the console components, and draw the console.
+
+Rhythmonics is meant to visually and interactively show the realtionship
+between rhythm/polyrhythm and pitch/harmony.  Polyrhythms of a given ratio
+at low Hz/BPM become harmonies of the same ratio at high Hz.
 """
 import pygame
 import math
@@ -98,7 +102,7 @@ while not userDone:
 
                 slider.pos[1] = offset_y + y
 
-                (beat_offset, ms_per_beat) = slider.updateVolt(beat_offset, clock)
+                beat_offset, ms_per_beat = slider.updateVolt(beat_offset, clock)
 
                 console.draw(window)
 
@@ -108,7 +112,7 @@ while not userDone:
 
                     slider.isSelected = False 
 
-                    (beat_offset, ms_per_beat) = slider.updateVolt(beat_offset, clock)
+                    beat_offset, ms_per_beat = slider.updateVolt(beat_offset, clock)
                     console.draw(window)
 
                 slider.isSelected = False 
