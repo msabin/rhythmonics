@@ -128,8 +128,8 @@ class Console:
         self.origin = origin
         self.size = pygame.Vector2(size)
 
-        self.baseColor = (0xff,0xbc,0xcf)
-        self.secColor = (0,0x93,0x90)
+        self.baseColor = config.PALE_PINK
+        self.secColor = config.TEAL
 
         self.surf = pygame.Surface(self.size)
 
@@ -138,7 +138,7 @@ class Console:
         # use and interact with.  All other areas of the console can now be instantiated after this to interact
         # with these overtones.
         screenAreaSize = pygame.Vector2(515, 425)
-        screenColor = (112, 198, 169)
+        screenColor = config.SURF_GREEN
 
         screenCenter = screenAreaSize/2
         consoleCenter = self.size/2
@@ -150,13 +150,13 @@ class Console:
         # Set up all the fonts of the console so console areas can use them.
         labelsFontSize = 18
         self.labelsFont = pygame.font.Font('fonts/Menlo.ttc', labelsFontSize)
-        self.labelsCol = (135,68,78)
+        self.labelsCol = config.DARK_POMEGRANATE
         
         digitalFontSize = 30
         self.digitalFont = pygame.font.Font('fonts/digital-7 (mono).ttf', digitalFontSize)
-        self.digitalOn = (0,0xcf,0xdd)
-        self.digitalOff = (0,0x55,0x63)
-        self.digitalBG = (0,0x35,0x55)
+        self.digitalOn = config.CYAN
+        self.digitalOff = config.MURKY_CYAN
+        self.digitalBG = config.DARK_CYAN
 
         # Initialize slider area.
         sliderAreaOrigin = (55, 45)
@@ -165,7 +165,7 @@ class Console:
 
         # Initialize area for radio buttons and kill switch.
         radioAreaOrigin = (810, 65)
-        radioAreaSize = (135 , 390)
+        radioAreaSize = (135, 390)
         self.radioArea = RadioArea(self, radioAreaOrigin, radioAreaSize) 
 
         # Initialize area for digital displays of ratios between active overtones.
@@ -319,10 +319,10 @@ class Screen:
 
         # Polygon aesthetics and nesting can be crafted here.  This is aesthetic and there
         # are many possible choices, there is nothing inherent about the choices made here.
-        rootColor = (237,199,176)
-        thirdColor = (118,150,222)
-        fifthColor = (255,151,152)
-        seventhColor = (171,103,114)
+        rootColor = config.KHAKI
+        thirdColor = config.LIGHT_COBALT
+        fifthColor = config.SORBET
+        seventhColor = config.POMEGRANATE
         
         rootRadius = (.94 * min(self.size[0], self.size[1]))/2
         
@@ -821,7 +821,7 @@ class RadioArea:
         peakHeight = 10
         tickLength = 4
         tickWidth = 1
-        sineCol = (147,80,90)
+        sineCol = config.LIGHT_MAROON
         for overtone in console.overtones:
             overtoneNum = overtone.overtone
 
@@ -940,7 +940,7 @@ class RadioBtn:
         self.pos = pygame.Vector2(position)
         self.radius = radius
 
-        self.borderCol = (0,0x79,0x87)
+        self.borderCol = config.DARK_TEAL
         self.borderWidth = 2
 
         # Set color of radio button when `active=False` same as its overtone's color
@@ -962,7 +962,7 @@ class RadioBtn:
         # This will be done by just having a bivariate Gaussian fade the light from the
         # center - i.e. alpha will descrease according to a Gaussian.
         self.light = pygame.Surface((self.radius*2, self.radius*2), pygame.SRCALPHA)
-        self.light.set_colorkey((0,0,0))
+        self.light.set_colorkey(config.BLACK)
 
         def bivarGauss(x, y, mu, sigma, height):
             """

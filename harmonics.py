@@ -309,7 +309,7 @@ class Polygon:
         # other's inscribing circle graphically as wanted.
         if not isPointy:
             self.tickLength = 5
-            self.tickColor = (139,72,82)
+            self.tickColor = config.MAROON
         else:
             self.inCirc = math.dist(center, (self.verts[0]+self.verts[1])/2)
     
@@ -403,7 +403,7 @@ class Ball:
         # To draw transparent objects in pygame the surface itself must have its alpha set.  We create
         # a surface just large enought to draw a ball on it here and set its transparency
         self.surf = pygame.Surface((self.radius*2, self.radius*2))
-        self.surf.set_colorkey((0,0,0))
+        self.surf.set_colorkey(config.BLACK)
         self.surf.set_alpha(self.alpha)
         pygame.draw.circle(self.surf, self.color, (self.radius, self.radius), self.radius)
 
