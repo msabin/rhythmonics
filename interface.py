@@ -55,10 +55,6 @@ import math
 import harmonics as hmx
 import config
 
-SMOOTH_SLIDE = config.SMOOTH_SLIDE
-TYPESET = config.TYPESET
-
-
 class Console:
     """
     Wrap all of the GUI elements and decide how they are displayed as a console.
@@ -716,44 +712,36 @@ class Slider:
         else:   
             Hz = 110 + (2000-110)*math.log(1 + (HzScale - .75)/.25, 2)  # Caps at 2000 Hz (seventh harmonic will be at 14000Hz)
 
-        if not SMOOTH_SLIDE:
-            if self.overtones[0].Hz != 0:
-                ms_per_beat = 1000/self.overtones[0].Hz #Keep ms_per_beat based on fundamental freq unless slider is not selected and we update fundamental Hz
-            else:
-                ms_per_beat = 0
-
         # Update all the oscillators with the new Hz.
-        if SMOOTH_SLIDE or (not self.isSelected):  #if slider isn't selected we *now* update the VCOs
-            if Hz == 0: 
-                ms_per_beat = 0
-                for overtone in self.overtones: 
-                    overtone.Hz = 0
-                    overtone.oscillator.stop()
+        if Hz == 0: 
+            ms_per_beat = 0
+            for overtone in self.overtones: 
+                overtone.Hz = 0
+                overtone.oscillator.stop()
+        else: 
+            # Start updated soundwaves in the future by buffer_time and then wait to play them so that
+            # they will be in sync with graphics.  
+            #
+            # This is done since, at low Hz, the function harmonics.Oscillator can take a long time to 
+            # create a Sound object and so using the beat_offset time to shift the sound waves' phases 
+            # by may be stale by the time all the Sound objects are created and ready to be played.  
+            # 
+            # Giving ourselves enough buffer time to finish updating the Hz of the oscillators and play 
+            # them allows them to be in proper sync with the clock and thus the movement of the 
+            # polygons' balls.
+            ms_per_beat = 1000/Hz 
 
-            else: 
-                # Start updated soundwaves in the future by buffer_time and then wait to play them so that
-                # they will be in sync with graphics.  
-                #
-                # This is done since, at low Hz, the function harmonics.Oscillator can take a long time to 
-                # create a Sound object and so using the beat_offset time to shift the sound waves' phases 
-                # by may be stale by the time all the Sound objects are created and ready to be played.  
-                # 
-                # Giving ourselves enough buffer time to finish updating the Hz of the oscillators and play 
-                # them allows them to be in proper sync with the clock and thus the movement of the 
-                # polygons' balls.
-                ms_per_beat = 1000/Hz 
+            buffer_time = (1/Hz)*26 # Chosen ad hoc; graphics sync well and doesn't take noticeably longer time.
 
-                buffer_time = (1/Hz)*26 # Chosen ad hoc; graphics sync well and doesn't take noticeably longer time.
+            beat_offset = (beat_offset + clock.get_time()) % ms_per_beat
+            clock.tick()
 
-                beat_offset = (beat_offset + clock.get_time()) % ms_per_beat
-                clock.tick()
+            for overtone in self.overtones: overtone.updateHz(Hz, (beat_offset+buffer_time)/ms_per_beat)
 
-                for overtone in self.overtones: overtone.updateHz(Hz, (beat_offset+buffer_time)/ms_per_beat)
+            msLeftToWait = int(max(buffer_time - clock.tick(), 0))  # Start immediately if we passed our buffer_time.
+            pygame.time.wait(msLeftToWait)
 
-                msLeftToWait = int(max(buffer_time - clock.tick(), 0))  # Start immediately if we passed our buffer_time.
-                pygame.time.wait(msLeftToWait)
-
-                for overtone in self.overtones: overtone.oscillator.play(loops=-1)
+            for overtone in self.overtones: overtone.oscillator.play(loops=-1)
 
         return beat_offset, ms_per_beat
     
@@ -886,8 +874,6 @@ class RadioArea:
         surface : pygame.Surface
             Surface to draw the radio button area onto.
         """
-        if TYPESET: pygame.draw.rect(surface, (0,0,0), (self.origin, self.size), 1)
-
         for radio, sine in zip(self.radios, self.sines):
             radio.draw(surface)
 
@@ -1023,15 +1009,15 @@ class RadioBtn:
     def press(self):
         """
         Press the button: toggle `active` and the associated overtone's `active`.
+
+        Toggle `active` for both the button and the associated overtone. The 
+        oscillators are muted even if the oscillator is active and it is the main 
+        event loop of the program's job to fade in the volumes of active oscillators.
         """
         self.active = not self.active
 
         self.overtone.active = self.active
-
-        if self.active: 
-            if not SMOOTH_SLIDE: self.overtone.oscillator.set_volume(1)
-        else:
-            self.overtone.oscillator.set_volume(0)
+        self.overtone.oscillator.set_volume(0)
 
     def draw(self, surface):
         """

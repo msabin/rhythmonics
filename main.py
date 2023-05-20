@@ -15,8 +15,6 @@ import math
 import interface
 import config
 
-SMOOTH_SLIDE = config.SMOOTH_SLIDE
-
 # Initialize pygame's mixer to be a mono channel then initialize the rest of pygame.
 pygame.mixer.init(channels=1)
 pygame.init()
@@ -108,13 +106,6 @@ while not userDone:
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:                           
-                if slider.isSelected and not SMOOTH_SLIDE: 
-
-                    slider.isSelected = False 
-
-                    beat_offset, ms_per_beat = slider.updateVolt(beat_offset, clock)
-                    console.draw(window)
-
                 slider.isSelected = False 
 
                 if killSwitch.isPressed:
@@ -156,21 +147,21 @@ while not userDone:
     screen.draw(window, console.origin)
     pygame.display.flip()
 
-    if SMOOTH_SLIDE:
-        # Fade the volume of active oscillators in over event loop runs to maximum volume.  All oscillators are 
-        # started muted and this loop increments the volume of active oscillators by a constant each event loop 
-        # until they're at maximum volume.  
-        # 
-        # This per-loop fading-in of volume is done so that we don't get gross clicks as the Hz are adjusted with 
-        # the slider and all the oscillators are restarted repeatedly during the slide.  With the fade-in, it now 
-        # sounds like an aesthic digital glitch instead of jarring clicks.  The constant that the volume is incremented
-        # by is chosen low enough so that the noise during slider movement is pleasant and quiet but not so low that
-        # the oscillators have too much delay in fading in.
-        for overtone in overtones:
-            if overtone.active:
-                vol = overtone.oscillator.get_volume()
-                if vol < 1:
-                    vol = min(vol + .05, 1)
-                    overtone.oscillator.set_volume(vol)              
+
+    # Fade the volume of active oscillators in over event loop runs to maximum volume.  All oscillators are 
+    # started muted and this loop increments the volume of active oscillators by a constant each event loop 
+    # until they're at maximum volume.  
+    # 
+    # This per-loop fading-in of volume is done so that we don't get gross clicks as the Hz are adjusted with 
+    # the slider and all the oscillators are restarted repeatedly during the slide.  With the fade-in, it now 
+    # sounds like an aesthic digital glitch instead of jarring clicks.  The constant that the volume is incremented
+    # by is chosen low enough so that the noise during slider movement is pleasant and quiet but not so low that
+    # the oscillators have too much delay in fading in.
+    for overtone in overtones:
+        if overtone.active:
+            vol = overtone.oscillator.get_volume()
+            if vol < 1:
+                vol = min(vol + .05, 1)
+                overtone.oscillator.set_volume(vol)              
 
 pygame.QUIT # Event loop complete since userDone = True, so we should quit.

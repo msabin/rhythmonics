@@ -36,8 +36,6 @@ import math
 
 import config
 
-SMOOTH_SLIDE = config.SMOOTH_SLIDE
-
 class Overtone:
     """
     Store core attributes of an Overtone, including corresponding Sound object and Polygon object.
@@ -131,13 +129,7 @@ class Overtone:
         self.oscillator.stop()
 
         self.oscillator = Oscillator(self.Hz, 1/self.numOvertones, self.phase)
-        if self.active:
-            if not SMOOTH_SLIDE: 
-                self.oscillator.set_volume(1)
-            else:
-                self.oscillator.set_volume(0)
-        else:
-            self.oscillator.set_volume(0)
+        self.oscillator.set_volume(0)
 
 def Oscillator(Hz, volScale, phase=0, sampRate=44100):
     """ 
