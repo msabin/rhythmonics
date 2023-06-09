@@ -55,13 +55,15 @@ import math
 import harmonics as hmx
 import config
 
+
 class Console:
     """
-    Wrap all of the GUI elements and decide how they are displayed as a console.
-    
-    This class sets up the console aesthetics (e.g. colors, fonts, layout) and initializes 
-    and collects all of its areas: ScreenArea, SliderArea, RadioArea, and RatioDisp.  It also
-    has a method for drawing itself and all of its areas onto a Surface.
+    Wrap all GUI elements and decide how they're displayed as a console.
+
+    This class sets up the console aesthetics (e.g. colors, fonts, 
+    layout) and initializes and collects all of its areas: ScreenArea, 
+    SliderArea, RadioArea, and RatioDisp.  It also has a method for 
+    drawing itself and all of its areas onto a Surface.
 
     Its initialization will also create the Overtone objects that the console acts as a GUI for
     displaying, voicing, and interacting with.
@@ -111,7 +113,7 @@ class Console:
         """
         Initialize the console and all of its area components it wraps.
 
-        Initialize all of the console aesthetics (e.g. colors, fonts, layout) and initialize 
+        Initialize all of the console aesthetics (e.g. colors, fonts, layout) and initialize
         and collect all of its areas: ScreenArea, SliderArea, RadioArea, and RatioDisp.  The
         ScreenArea's initialization will instantiate the Polygon objects to display and, with
         them, the Overtone objects that the console acts as GUI for interacting with.
@@ -140,33 +142,41 @@ class Console:
         screenAreaSize = pygame.Vector2(515, 425)
         screenColor = config.SURF_GREEN
 
-        screenCenter = screenAreaSize/2
-        consoleCenter = self.size/2
-        screenAreaOrigin = consoleCenter - screenCenter - (0,22)
-        self.screenArea = ScreenArea(screenAreaOrigin, screenAreaSize, screenColor, self.secColor, startHz)
+        screenCenter = screenAreaSize / 2
+        consoleCenter = self.size / 2
+        screenAreaOrigin = consoleCenter - screenCenter - (0, 22)
+        self.screenArea = ScreenArea(
+            screenAreaOrigin,
+            screenAreaSize,
+            screenColor,
+            self.secColor,
+            startHz,
+        )
 
         self.overtones = self.screenArea.screen.overtones
-     
+
         # Set up all the fonts of the console so console areas can use them.
         labelsFontSize = 18
-        self.labelsFont = pygame.font.Font('fonts/Menlo.ttc', labelsFontSize)
+        self.labelsFont = pygame.font.Font("fonts/Menlo.ttc", labelsFontSize)
         self.labelsCol = config.DARK_POMEGRANATE
-        
+
         digitalFontSize = 30
-        self.digitalFont = pygame.font.Font('fonts/digital-7 (mono).ttf', digitalFontSize)
+        self.digitalFont = pygame.font.Font(
+            "fonts/digital-7 (mono).ttf", digitalFontSize
+        )
         self.digitalOn = config.CYAN
         self.digitalOff = config.MURKY_CYAN
         self.digitalBG = config.DARK_CYAN
 
         # Initialize slider area.
         sliderAreaOrigin = (55, 45)
-        sliderAreaHeight = self.size[1]*.85
+        sliderAreaHeight = self.size[1] * 0.85
         self.sliderArea = SliderArea(self, sliderAreaOrigin, sliderAreaHeight)
 
         # Initialize area for radio buttons and kill switch.
         radioAreaOrigin = (810, 65)
         radioAreaSize = (135, 390)
-        self.radioArea = RadioArea(self, radioAreaOrigin, radioAreaSize) 
+        self.radioArea = RadioArea(self, radioAreaOrigin, radioAreaSize)
 
         # Initialize area for digital displays of ratios between active overtones.
         ratioOrigin = screenAreaOrigin + (138, screenAreaSize[1] + 30)
@@ -182,7 +192,9 @@ class Console:
             Surface to blit the console's surface to.
         """
         # Clear screen by drawing console base onto console's surface.
-        pygame.draw.rect(self.surf, self.baseColor, ((0,0), self.size), border_radius=50)
+        pygame.draw.rect(
+            self.surf, self.baseColor, ((0, 0), self.size), border_radius=50
+        )
 
         # Draw all of console's areas onto console's surface.
         self.screenArea.draw(self.surf)
@@ -193,14 +205,15 @@ class Console:
         # Blit console's surface onto the target surface/window.
         targetSurf.blit(self.surf, self.origin)
 
+
 class ScreenArea:
     """
     Area for the Screen that displays polygons and the border around it.
 
     The screen area size and origin accounts for the border and a Screen
-    object is initalized to be a smaller size and offsets its origin within 
+    object is initalized to be a smaller size and offsets its origin within
     the border area.
-    
+
     Attributes
     ----------
     border : pygame.Rect
@@ -246,7 +259,7 @@ class ScreenArea:
         self.borderCol = borderCol
 
         # Offset and size the screen within the border area and instantiate screen.
-        screenOrigin = pygame.Vector2(origin) + (45,25)
+        screenOrigin = pygame.Vector2(origin) + (45, 25)
         screenSize = pygame.Vector2(size) - (90, 76)
         self.screen = Screen(screenOrigin, screenSize, screenCol, startHz)
 
@@ -260,11 +273,16 @@ class ScreenArea:
             Surface to draw the screen area onto.
         """
         # Draw the border on the Surface and then draw have the screen draw itself on top.
-        pygame.draw.rect(surf, self.borderCol, self.border, 
-                         border_radius=self.borderRadius, 
-                         border_bottom_right_radius=self.bigBorderRad)
+        pygame.draw.rect(
+            surf,
+            self.borderCol,
+            self.border,
+            border_radius=self.borderRadius,
+            border_bottom_right_radius=self.bigBorderRad,
+        )
 
         self.screen.draw(surf)
+
 
 class Screen:
     """
@@ -272,10 +290,10 @@ class Screen:
 
     This class creates and holds the overtones for the console and draws the polygons
     of those overtones and their balls.  This is where rhythms are visualized at low
-    Hz: balls rhythmically traversing polygons at certain speeds.  It is still 
+    Hz: balls rhythmically traversing polygons at certain speeds.  It is still
     visualized at high speeds, although the balls' paths become blurred at high Hz.
     This is the main visual component of the console, the rest is for GUI interaction.
-    
+
     Attributes
     ----------
     origin : pygame.Vector2
@@ -298,7 +316,7 @@ class Screen:
         to the screen position.  Polygons are crafted and nested aesthetically but arbitrarily,
         their layout can be changed here.  Once the polgyons are instantiated they are used
         to instantiate the attached overtones that the rest of the console will use.
-        
+
         Parameters
         ----------
         origin
@@ -315,7 +333,7 @@ class Screen:
         self.color = color
         self.surf = pygame.Surface(size)
 
-        center = self.size/2
+        center = self.size / 2
 
         # Polygon aesthetics and nesting can be crafted here.  This is aesthetic and there
         # are many possible choices, there is nothing inherent about the choices made here.
@@ -323,42 +341,47 @@ class Screen:
         thirdColor = config.LIGHT_COBALT
         fifthColor = config.SORBET
         seventhColor = config.POMEGRANATE
-        
-        rootRadius = (.94 * min(self.size[0], self.size[1]))/2
-        
+
+        rootRadius = (0.94 * min(self.size[0], self.size[1])) / 2
+
         # Polygons are named by their scale degree relative to the fundamental root frequency, `root1`.
         # Order is mixed based on which polygons are inscribed in each other since they need to access
-        # their circumscribing Polygon object's `inCirc` attribute.  The first parameter in the 
+        # their circumscribing Polygon object's `inCirc` attribute.  The first parameter in the
         # instantiation of a Polygon object is the number of vertices - i.e. which overtone it is.
         root4 = hmx.Polygon(8, rootRadius, center, rootColor)
 
-        root1 = hmx.Polygon(1,root4.inCirc-10, center, rootColor, isPointy=False)
-        root3 = hmx.Polygon(4,root4.inCirc-10, center, rootColor)
+        root1 = hmx.Polygon(
+            1, root4.inCirc - 10, center, rootColor, isPointy=False
+        )
+        root3 = hmx.Polygon(4, root4.inCirc - 10, center, rootColor)
 
-        root2 = hmx.Polygon(2,root3.inCirc, center, rootColor, isPointy=False)
+        root2 = hmx.Polygon(2, root3.inCirc, center, rootColor, isPointy=False)
         fifth1 = hmx.Polygon(3, root3.inCirc, center, fifthColor)
-        fifth2 = hmx.Polygon(6,root3.inCirc, center, fifthColor)
+        fifth2 = hmx.Polygon(6, root3.inCirc, center, fifthColor)
 
-        third1 = hmx.Polygon(5,fifth1.inCirc, center, thirdColor)
-        
-        seventh1 = hmx.Polygon(7,third1.inCirc, center, seventhColor)
+        third1 = hmx.Polygon(5, fifth1.inCirc, center, thirdColor)
+
+        seventh1 = hmx.Polygon(7, third1.inCirc, center, seventhColor)
 
         polys = [root1, root2, fifth1, root3, third1, fifth2, seventh1, root4]
 
         numOvertones = len(polys)
-        self.overtones = [hmx.Overtone(len(poly.verts), poly, numOvertones, startHz) for poly in polys]
+        self.overtones = [
+            hmx.Overtone(len(poly.verts), poly, numOvertones, startHz)
+            for poly in polys
+        ]
 
-    def draw(self, targetSurf, offset=pygame.Vector2(0,0)):
+    def draw(self, targetSurf, offset=pygame.Vector2(0, 0)):
         """
         Draw the screen and everything on the screen (polygons and balls) onto a surface.
 
         All polygons are always drawn and only the balls of active overtones are drawn.  The
         screen can be offset from its origin but the default is no offset.  The screen origin
-        is relative to the console the screen is on but if the screen is being drawn to a 
+        is relative to the console the screen is on but if the screen is being drawn to a
         different surface, such as the main window so the console doesn't have to be redrawn
         as often as the screen, then the offset should be set accordingly to keep it drawn to
         the right spot on the console, see Examples.
-        
+
         Parameters
         ----------
         targetSurf : pygame.Surface
@@ -382,12 +405,14 @@ class Screen:
         """
         self.surf.fill(self.color)
 
-        for overtone in self.overtones: 
+        for overtone in self.overtones:
             overtone.poly.draw(self.surf)
 
-            if overtone.active: overtone.poly.ball.draw(self.surf)
+            if overtone.active:
+                overtone.poly.ball.draw(self.surf)
 
         targetSurf.blit(self.surf, self.origin + offset)
+
 
 class SliderArea:
     """
@@ -395,7 +420,7 @@ class SliderArea:
 
     This class creates the slider, the labels along the slider, and the slider's digital
     display boxes and lays them all out visually with its draw method.
-    
+
     Attributes
     ----------
     origin : pygame.Vector2
@@ -430,7 +455,7 @@ class SliderArea:
     draw
         Draw the entire slider area on a surface.
     """
-    
+
     def __init__(self, console, origin, height):
         """
         Initialize and collect slider area components: slider, labels, and digital displays.
@@ -438,7 +463,7 @@ class SliderArea:
         Initializes the Slider object and renders all slider's label text and digital displays.
         Origin is relative to console's origin and height of slider area includes the digital
         display boxes.
-        
+
         Parameters
         ----------
         console : Console
@@ -458,21 +483,27 @@ class SliderArea:
         labelsFont = console.labelsFont
         self.labelsCol = console.labelsCol
 
-        self.HzLabel = labelsFont.render('Hz', True, self.labelsCol)
-        self.BPM_Label = labelsFont.render('BPM', True, self.labelsCol)
+        self.HzLabel = labelsFont.render("Hz", True, self.labelsCol)
+        self.BPM_Label = labelsFont.render("BPM", True, self.labelsCol)
 
-        labelsText = ['FREEZE', 'GROOVE', 'CHAOS', 'HARMONY', 'EEEEEE']
-        self.labels = [labelsFont.render(text, True, self.labelsCol) for text in labelsText]
-        
+        labelsText = ["FREEZE", "GROOVE", "CHAOS", "HARMONY", "EEEEEE"]
+        self.labels = [
+            labelsFont.render(text, True, self.labelsCol)
+            for text in labelsText
+        ]
+
         # Create digital display boxes for Hz and BPM.
         self.digitalFont = console.digitalFont
         self.digitalOn = console.digitalOn
         digitalOff = console.digitalOff
         digitalBG = console.digitalBG
-        
-        self.HzBox = self.digitalFont.render(' 8888.88 ', False, digitalOff, digitalBG)
-        self.BPM_Box = self.digitalFont.render(' 888888 ', False, digitalOff, digitalBG)
-        
+
+        self.HzBox = self.digitalFont.render(
+            " 8888.88 ", False, digitalOff, digitalBG
+        )
+        self.BPM_Box = self.digitalFont.render(
+            " 888888 ", False, digitalOff, digitalBG
+        )
 
         # Set up parameters to instantiate the slider, nested between Hz and BPM digital displays.
         # Note, `sliderMaxy` will be the *lowest* on the screen that the slider handle can go since
@@ -480,16 +511,35 @@ class SliderArea:
         verticalBuf = 30
         self.horizontalBuf = 20
         sliderMiny = self.origin[1] + self.HzBox.get_height() + verticalBuf
-        sliderMaxy = self.origin[1] + self.height - self.BPM_Box.get_height() - verticalBuf
-        
-        # Find the slider starting position (offset x coordinate with enough room for labels) and create slider.
-        sliderSize = (20,40)
-        self.labelsWidth = max([label.get_width() for label in self.labels])
-        sliderOffset = self.origin[0] + self.labelsWidth + self.horizontalBuf + sliderSize[0]
-        sliderStart = .25  # Slider knob starts at this fraction of the slider range. GROOVE is at .25.
-        sliderPos = pygame.Vector2(sliderOffset, sliderMaxy-sliderStart*(sliderMaxy-sliderMiny))
+        sliderMaxy = (
+            self.origin[1]
+            + self.height
+            - self.BPM_Box.get_height()
+            - verticalBuf
+        )
 
-        self.slider = Slider(sliderPos, sliderSize, self.color, console.overtones, sliderMiny, sliderMaxy)
+        # Find the slider starting position (offset x coordinate with enough room for labels) and create slider.
+        sliderSize = (20, 40)
+        self.labelsWidth = max([label.get_width() for label in self.labels])
+        sliderOffset = (
+            self.origin[0]
+            + self.labelsWidth
+            + self.horizontalBuf
+            + sliderSize[0]
+        )
+        sliderStart = 0.25  # Slider knob starts at this fraction of the slider range. GROOVE is at .25.
+        sliderPos = pygame.Vector2(
+            sliderOffset, sliderMaxy - sliderStart * (sliderMaxy - sliderMiny)
+        )
+
+        self.slider = Slider(
+            sliderPos,
+            sliderSize,
+            self.color,
+            console.overtones,
+            sliderMiny,
+            sliderMaxy,
+        )
 
     def draw(self, surface):
         """
@@ -501,7 +551,7 @@ class SliderArea:
             Surface to draw the slider area onto.
         """
         # Draw slider track's rut and then the slider handle.
-        sliderRutCol = (150,150,150)
+        sliderRutCol = (150, 150, 150)
         sliderMin = (self.slider.pos[0], self.slider.miny)
         sliderMax = (self.slider.pos[0], self.slider.maxy)
         pygame.draw.line(surface, sliderRutCol, sliderMin, sliderMax, width=2)
@@ -511,11 +561,13 @@ class SliderArea:
         # Draw Hz display: HzBox and label and then current Hz in box.
         surface.blit(self.HzBox, (self.origin[0], self.origin[1]))
 
-        HzLabelOffset = self.origin[0] + self.HzBox.get_width() + self.horizontalBuf/2
+        HzLabelOffset = (
+            self.origin[0] + self.HzBox.get_width() + self.horizontalBuf / 2
+        )
         surface.blit(self.HzLabel, (HzLabelOffset, self.origin[1]))
 
         Hz = self.slider.overtones[0].Hz
-        HzString = " " + f'{Hz:07.2f}'.replace("1", " 1") + " "
+        HzString = " " + f"{Hz:07.2f}".replace("1", " 1") + " "
         HzDisp = self.digitalFont.render(HzString, False, self.digitalOn)
         surface.blit(HzDisp, (self.origin[0], self.origin[1]))
 
@@ -523,28 +575,35 @@ class SliderArea:
         for i, label in enumerate(self.labels):
             fntHeight = label.get_height()
             xPos = self.origin[0]
-            yPos = (self.slider.maxy-fntHeight/2) - (i/4)*(self.slider.maxy-self.slider.miny)
+            yPos = (self.slider.maxy - fntHeight / 2) - (i / 4) * (
+                self.slider.maxy - self.slider.miny
+            )
 
-            surface.blit(label, (xPos, yPos)) 
+            surface.blit(label, (xPos, yPos))
 
-            xOffset = xPos + self.labelsWidth + 10 # Draw arrow next to label.
+            xOffset = xPos + self.labelsWidth + 10  # Draw arrow next to label.
             arrowWidth = 5
-            arrowPoints = [(xOffset, yPos+3), 
-                              (xOffset, yPos+fntHeight-3), 
-                              (xOffset+arrowWidth, yPos+fntHeight/2)]
+            arrowPoints = [
+                (xOffset, yPos + 3),
+                (xOffset, yPos + fntHeight - 3),
+                (xOffset + arrowWidth, yPos + fntHeight / 2),
+            ]
             pygame.draw.polygon(surface, self.labelsCol, arrowPoints)
 
         # Draw BPM display: BPM_Box and label and then current BPM in box.
         yOffset = self.origin[1] + self.height - self.BPM_Box.get_height()
         surface.blit(self.BPM_Box, (self.origin[0], yOffset))
 
-        BPM_Label_Offset = self.origin[0]+self.BPM_Box.get_width()+self.horizontalBuf/2
+        BPM_Label_Offset = (
+            self.origin[0] + self.BPM_Box.get_width() + self.horizontalBuf / 2
+        )
         surface.blit(self.BPM_Label, (BPM_Label_Offset, yOffset))
 
         BPM = Hz * 60
-        BPM_String = " " + f'{BPM:06.0f}'.replace("1", " 1") + " "
+        BPM_String = " " + f"{BPM:06.0f}".replace("1", " 1") + " "
         BPM_Disp = self.digitalFont.render(BPM_String, False, self.digitalOn)
         surface.blit(BPM_Disp, (self.origin[0], yOffset))
+
 
 class Slider:
     """
@@ -578,13 +637,13 @@ class Slider:
     handle : pygame.Rect
         Rect object that is visually displayed as the slider handle.
     quarterTarget : float
-        Hz that fundamental overtone will be set to at the quarter point of 
+        Hz that fundamental overtone will be set to at the quarter point of
         the slider scale.
     halfTarget : float
-        Hz that fundamental overtone will be set to at the halfway point of 
+        Hz that fundamental overtone will be set to at the halfway point of
         the slider scale.
     threeQuartTarget : float
-        Hz that fundamental overtone will be set to at the three quarters 
+        Hz that fundamental overtone will be set to at the three quarters
         point of the slider scale.
     topTarget : float
         Hz that fundamental overtone will be set to at the top of the slider
@@ -637,7 +696,7 @@ class Slider:
 
         self.isSelected = False
 
-        self.handle = pygame.Rect(self.pos - self.size/2, self.size)
+        self.handle = pygame.Rect(self.pos - self.size / 2, self.size)
 
         # Set the target Hz values the slider should affect at the quarter marks of the slider track.
         # The quarter and halfway point should not yet sound like a pitch and should sound like a
@@ -651,8 +710,10 @@ class Slider:
         # matches a smooth scaling of rhythm, while the rest of the slider track fits human perception
         # of pitch since we hear increase in pitches logarithmically.  Choosing appropriately gives a
         # smooth and natural scaling in both conceptual components of rhythmonics: rhythm and pitch.
-        self.quarterTarget = 1 # Up to quarter of the way, linearly scale up to 1Hz=60bpm.
-        self.halfTarget = 275/60   # Linearly scales up to 275/60Hz = 275bpm
+        self.quarterTarget = (
+            1  # Up to quarter of the way, linearly scale up to 1Hz=60bpm.
+        )
+        self.halfTarget = 275 / 60  # Linearly scales up to 275/60Hz = 275bpm
         self.threeQuartTarget = 110
         self.topTarget = 2000
 
@@ -663,14 +724,14 @@ class Slider:
         The slider has target Hz values to be assigned at the quarter marks of the
         slider and either scales linearly or logarithmically towards those values
         depending on whether the Hz is in a range that sounds like discrete rhythms
-        or a continuous pitch, respectively.  This function updates the Hz of all 
-        the overtones according to the scaling based on where the slider handle is 
+        or a continuous pitch, respectively.  This function updates the Hz of all
+        the overtones according to the scaling based on where the slider handle is
         positioned.
 
         This function uses takes as parameters the number of milliseconds since the
         last beat, `beat_offset`, and the main event loop's `clock` to make sure the
         the phase of the sound waves matches the beat offset so that the sound and
-        graphics of the console system are matched up.  The new `beat_offset` and 
+        graphics of the console system are matched up.  The new `beat_offset` and
         number of milliseconds in a beat, `ms_per_beat`, (updated with the new Hz)
         are returned to keep the event loop in sync with the sound.
 
@@ -692,59 +753,76 @@ class Slider:
         -----
         The name `updateVolt` is used to conceptually capture the analog sound systems
         this console conceptually emulates: Sounds are produced by the harmonics.Oscillator
-        function which is inspired by analog circuits called Voltage-Controlled Oscillators 
+        function which is inspired by analog circuits called Voltage-Controlled Oscillators
         (VCOs) which create a sound wave at a frequency that depends on the voltage supplied
         to it.  Conceptually, the slider is providing the voltage here and speeding up or
-        slowing down the VCO, and thus increasing or decreasing the pitch of the sound, 
-        respectively.  
+        slowing down the VCO, and thus increasing or decreasing the pitch of the sound,
+        respectively.
         """
         # Translate the slider position to the new Hz.
-        HzScale = abs(self.pos[1] - self.maxy)/(self.maxy - self.miny)  # [0,1] value of where slider is on track (1 is top).
+        HzScale = abs(self.pos[1] - self.maxy) / (
+            self.maxy - self.miny
+        )  # [0,1] value of where slider is on track (1 is top).
 
         # TODO Define a log function for that is intuitive and parameterizable for scaling these.
-        if HzScale <= .25:
-            Hz = self.quarterTarget * HzScale/.25  
-            if Hz <= .02: Hz = 0  # Too low Hz takes too much time to make Sound object, just make it 0.
-        elif HzScale <= .5:
-            Hz = (1-(HzScale -.25)/.25) +   self.halfTarget * (HzScale-.25)/.25
-        elif HzScale <= .75:
-            Hz = 275/60 + (110-275/60)*math.log(1 + (HzScale - .5)/.25, 2)  # log scales up to 110Hz (4th harmonic/2nd octave will be 440Hz)    
-        else:   
-            Hz = 110 + (2000-110)*math.log(1 + (HzScale - .75)/.25, 2)  # Caps at 2000 Hz (seventh harmonic will be at 14000Hz)
+        if HzScale <= 0.25:
+            Hz = self.quarterTarget * HzScale / 0.25
+            if Hz <= 0.02:
+                Hz = 0  # Too low Hz takes too much time to make Sound object, just make it 0.
+        elif HzScale <= 0.5:
+            Hz = (1 - (HzScale - 0.25) / 0.25) + self.halfTarget * (
+                HzScale - 0.25
+            ) / 0.25
+        elif HzScale <= 0.75:
+            Hz = 275 / 60 + (110 - 275 / 60) * math.log(
+                1 + (HzScale - 0.5) / 0.25, 2
+            )  # log scales up to 110Hz (4th harmonic/2nd octave will be 440Hz)
+        else:
+            Hz = 110 + (2000 - 110) * math.log(
+                1 + (HzScale - 0.75) / 0.25, 2
+            )  # Caps at 2000 Hz (seventh harmonic will be at 14000Hz)
 
         # Update all the oscillators with the new Hz.
-        if Hz == 0: 
+        if Hz == 0:
             ms_per_beat = 0
-            for overtone in self.overtones: 
+            for overtone in self.overtones:
                 overtone.Hz = 0
                 overtone.oscillator.stop()
-        else: 
+        else:
             # Start updated soundwaves in the future by buffer_time and then wait to play them so that
-            # they will be in sync with graphics.  
+            # they will be in sync with graphics.
             #
-            # This is done since, at low Hz, the function harmonics.Oscillator can take a long time to 
-            # create a Sound object and so using the beat_offset time to shift the sound waves' phases 
-            # by may be stale by the time all the Sound objects are created and ready to be played.  
-            # 
-            # Giving ourselves enough buffer time to finish updating the Hz of the oscillators and play 
-            # them allows them to be in proper sync with the clock and thus the movement of the 
+            # This is done since, at low Hz, the function harmonics.Oscillator can take a long time to
+            # create a Sound object and so using the beat_offset time to shift the sound waves' phases
+            # by may be stale by the time all the Sound objects are created and ready to be played.
+            #
+            # Giving ourselves enough buffer time to finish updating the Hz of the oscillators and play
+            # them allows them to be in proper sync with the clock and thus the movement of the
             # polygons' balls.
-            ms_per_beat = 1000/Hz 
+            ms_per_beat = 1000 / Hz
 
-            buffer_time = (1/Hz)*26 # Chosen ad hoc; graphics sync well and doesn't take noticeably longer time.
+            buffer_time = (
+                1 / Hz
+            ) * 26  # Chosen ad hoc; graphics sync well and doesn't take noticeably longer time.
 
             beat_offset = (beat_offset + clock.get_time()) % ms_per_beat
             clock.tick()
 
-            for overtone in self.overtones: overtone.updateHz(Hz, (beat_offset+buffer_time)/ms_per_beat)
+            for overtone in self.overtones:
+                overtone.updateHz(
+                    Hz, (beat_offset + buffer_time) / ms_per_beat
+                )
 
-            msLeftToWait = int(max(buffer_time - clock.tick(), 0))  # Start immediately if we passed our buffer_time.
+            msLeftToWait = int(
+                max(buffer_time - clock.tick(), 0)
+            )  # Start immediately if we passed our buffer_time.
             pygame.time.wait(msLeftToWait)
 
-            for overtone in self.overtones: overtone.oscillator.play(loops=-1)
+            for overtone in self.overtones:
+                overtone.oscillator.play(loops=-1)
 
         return beat_offset, ms_per_beat
-    
+
     def draw(self, surface):
         """
         Update slider handle with position and draw it to a surface.
@@ -754,8 +832,9 @@ class Slider:
         surface : pygame.Surface
             Surface to draw slider handle onto.
         """
-        self.handle = pygame.Rect(self.pos - self.size/2, self.size)
+        self.handle = pygame.Rect(self.pos - self.size / 2, self.size)
         pygame.draw.rect(surface, self.color, self.handle)
+
 
 class RadioArea:
     """
@@ -764,8 +843,8 @@ class RadioArea:
     This area has radio buttons that allow for turning each overtone on or of - i.e.
     toggling the overtone `active` boolean attribute.  It has sine waves to graphically
     represent the overtone next to its associated radio button.  And there is a kill
-    switch button that allows all the radio buttons to be turned off at once. 
-    
+    switch button that allows all the radio buttons to be turned off at once.
+
     Attributes
     ----------
     origin : pygame.Vector2
@@ -826,41 +905,53 @@ class RadioArea:
             overtoneNum = overtone.overtone
 
             # Create radio button associated with the overtone.
-            yOffset = origin[1] + (overtoneNum-1)*size[1]/(totalOvertones-1)
+            yOffset = origin[1] + (overtoneNum - 1) * size[1] / (
+                totalOvertones - 1
+            )
             radio = RadioBtn((origin[0], yOffset), radioRad, overtone)
             self.radios.append(radio)
 
             # Draw picture of the sine wave of the overtone.
-            yOffset = peakHeight+tickLength  # Put sine wave (w/ tick mark) in middle of the surface.
-            sineSurface = pygame.Surface((sineLength, yOffset*2))
+            yOffset = (
+                peakHeight + tickLength
+            )  # Put sine wave (w/ tick mark) in middle of the surface.
+            sineSurface = pygame.Surface((sineLength, yOffset * 2))
             sineSurface.fill(console.baseColor)
 
             wave = []
             for i in range(sampRate):
-                xVal = (i/sampRate)*sineLength
-                yVal = -peakHeight*math.sin(2*math.pi * i/sampRate * overtoneNum/2)
+                xVal = (i / sampRate) * sineLength
+                yVal = -peakHeight * math.sin(
+                    2 * math.pi * i / sampRate * overtoneNum / 2
+                )
 
-                wave.append((xVal,yVal+yOffset))
+                wave.append((xVal, yVal + yOffset))
 
             pygame.draw.aalines(sineSurface, sineCol, False, wave)
 
             # Draw a tick on each of the sine wave's peaks (pictorally represent rhythm at low Hz).
             for i in range(overtoneNum):
-                peakOffset = (2*i+1)*sineLength/(overtoneNum*2)
-                peakParity = peakHeight*(-1)**(i+1) + yOffset
+                peakOffset = (2 * i + 1) * sineLength / (overtoneNum * 2)
+                peakParity = peakHeight * (-1) ** (i + 1) + yOffset
 
-                tickStart = (peakOffset, peakParity + tickLength/2)
-                tickEnd = (peakOffset, peakParity - tickLength/2)
-                pygame.draw.line(sineSurface, sineCol, tickStart, tickEnd, tickWidth)
+                tickStart = (peakOffset, peakParity + tickLength / 2)
+                tickEnd = (peakOffset, peakParity - tickLength / 2)
+                pygame.draw.line(
+                    sineSurface, sineCol, tickStart, tickEnd, tickWidth
+                )
 
             self.sines.append(sineSurface)
-        
-        # Create the kill switch for the radio buttons and its label.
-        killSwitchSize = (15,15)
-        killSwitchOrigin = (origin[0], origin[1] + size[1] + 55)
-        self.killSwitch = KillSwitch(killSwitchOrigin, killSwitchSize, console.secColor, self.radios)
 
-        self.killSwitchLabel = console.labelsFont.render('SSHHHHHHH!', True, console.labelsCol)
+        # Create the kill switch for the radio buttons and its label.
+        killSwitchSize = (15, 15)
+        killSwitchOrigin = (origin[0], origin[1] + size[1] + 55)
+        self.killSwitch = KillSwitch(
+            killSwitchOrigin, killSwitchSize, console.secColor, self.radios
+        )
+
+        self.killSwitchLabel = console.labelsFont.render(
+            "SSHHHHHHH!", True, console.labelsCol
+        )
 
     def draw(self, surface):
         """
@@ -877,20 +968,26 @@ class RadioArea:
         for radio, sine in zip(self.radios, self.sines):
             radio.draw(surface)
 
-            surface.blit(sine, radio.pos + (self.horizontalBuf, -sine.get_height()/2))
+            surface.blit(
+                sine, radio.pos + (self.horizontalBuf, -sine.get_height() / 2)
+            )
 
         self.killSwitch.draw(surface)
-        labelOffset = (self.horizontalBuf-2, -self.killSwitch.size[1]/2 - 3)
+        labelOffset = (
+            self.horizontalBuf - 2,
+            -self.killSwitch.size[1] / 2 - 3,
+        )
         surface.blit(self.killSwitchLabel, self.killSwitch.pos + labelOffset)
+
 
 class RadioBtn:
     """
     Radio button that controls the `active` status of an Overtone.
 
     A radio button is associated with an overtone and can be pressed, toggling whether
-    that overtone is active or not.  The radio button lights up when active and can 
+    that overtone is active or not.  The radio button lights up when active and can
     draw itsef.
-    
+
     Attributes
     ----------
     overtone : harmonics.Overtone
@@ -955,23 +1052,24 @@ class RadioBtn:
         hsla = self.lightCol.hsla
         self.lightCol.hsla = (hsla[0], hsla[1], hsla[2] + 3, hsla[3])
 
-
         # Create surface whose color and alpha value can be set on a per-pixel basis to
         # draw `lightCol` on in a bloom effect sort of way to simulate light.
         #
         # This will be done by just having a bivariate Gaussian fade the light from the
         # center - i.e. alpha will descrease according to a Gaussian.
-        self.light = pygame.Surface((self.radius*2, self.radius*2), pygame.SRCALPHA)
+        self.light = pygame.Surface(
+            (self.radius * 2, self.radius * 2), pygame.SRCALPHA
+        )
         self.light.set_colorkey(config.BLACK)
 
         def bivarGauss(x, y, mu, sigma, height):
             """
-            Bivariate Gaussian function of two i.i.d. variaables.  
-            
-            Since variables are i.i.d., this function just takes one mu and one sigma for 
+            Bivariate Gaussian function of two i.i.d. variaables.
+
+            Since variables are i.i.d., this function just takes one mu and one sigma for
             both variables.  The bivariate Gaussian will thus always be circular.
 
-            The height of the peak of the Gaussian can be set arbitrarily.  Set height to 
+            The height of the peak of the Gaussian can be set arbitrarily.  Set height to
             1/(2*math.pi * sigma**2) for a valid pdf of a bivariate normal distribution.
 
             Parameters
@@ -992,26 +1090,34 @@ class RadioBtn:
             float
                 Value of parameterized Gaussian at (x,y).
             """
-            return height * math.e**(-1/2 * ((x-mu)**2 + (y-mu)**2)/sigma**2)
+            return height * math.e ** (
+                -1 / 2 * ((x - mu) ** 2 + (y - mu) ** 2) / sigma**2
+            )
 
-        mu = self.radius  # Center of Gaussian (which is center of radio button).
-        sigma = self.radius*4/7  # Fall-off rate chosen for visual aesthetics.
-        height = 255  # Height is max opaque alpha and then fades to transparent.
+        mu = (
+            self.radius
+        )  # Center of Gaussian (which is center of radio button).
+        sigma = (
+            self.radius * 4 / 7
+        )  # Fall-off rate chosen for visual aesthetics.
+        height = (
+            255  # Height is max opaque alpha and then fades to transparent.
+        )
 
         # Go to each pixel on the surface and set its alpha according to the bivariate
         # Gaussian and color the pixel with the `lightCol`.
-        for x in range(radius*2):
-            for y in range(radius*2):
+        for x in range(radius * 2):
+            for y in range(radius * 2):
                 alpha = int(bivarGauss(x, y, mu, sigma, height))
                 self.lightCol.a = alpha
-                self.light.set_at((x,y), self.lightCol)
+                self.light.set_at((x, y), self.lightCol)
 
     def press(self):
         """
         Press the button: toggle `active` and the associated overtone's `active`.
 
-        Toggle `active` for both the button and the associated overtone. The 
-        oscillators are muted even if the oscillator is active and it is the main 
+        Toggle `active` for both the button and the associated overtone. The
+        oscillators are muted even if the oscillator is active and it is the main
         event loop of the program's job to fade in the volumes of active oscillators.
         """
         self.active = not self.active
@@ -1032,11 +1138,18 @@ class RadioBtn:
         pygame.draw.circle(surface, self.offCol, self.pos, self.radius)
 
         # If the button is active draw the light on the button
-        if self.active: 
-            surface.blit(self.light, self.pos - (self.radius,self.radius))
+        if self.active:
+            surface.blit(self.light, self.pos - (self.radius, self.radius))
 
         # Draw border around the button.
-        pygame.draw.circle(surface, self.borderCol, self.pos, self.radius+self.borderWidth, 2)
+        pygame.draw.circle(
+            surface,
+            self.borderCol,
+            self.pos,
+            self.radius + self.borderWidth,
+            2,
+        )
+
 
 class KillSwitch:
     """
@@ -1045,7 +1158,7 @@ class KillSwitch:
     The killswitch always turns off all radio buttons when pushed.  The button shrinks
     slightly when pressed and clicks when both pressed and released for skeumorphic
     effect.
-    
+
     Attributes
     ----------
     pos : pygame.Vector2
@@ -1074,10 +1187,11 @@ class KillSwitch:
     draw
         Draw the killswitch on a surface (smaller if it's pressed).
     """
+
     def __init__(self, position, size, color, radios):
         """
         Initialize the killswitch and create sounds for it being pressed.
-        
+
         Parameters
         ----------
         position : tuple
@@ -1095,15 +1209,17 @@ class KillSwitch:
 
         self.radios = radios
 
-        self.button = pygame.Rect(self.pos - self.size/2, self.size)
+        self.button = pygame.Rect(self.pos - self.size / 2, self.size)
 
-        pressedSize = self.size - (1,1)
-        self.pressedButton = pygame.Rect(self.pos-pressedSize/2, pressedSize)
+        pressedSize = self.size - (1, 1)
+        self.pressedButton = pygame.Rect(
+            self.pos - pressedSize / 2, pressedSize
+        )
 
         self.isPressed = False
 
-        self.downClick = pygame.mixer.Sound('sounds/down-click.wav')
-        self.upClick = pygame.mixer.Sound('sounds/up-click.wav')
+        self.downClick = pygame.mixer.Sound("sounds/down-click.wav")
+        self.upClick = pygame.mixer.Sound("sounds/up-click.wav")
 
         self.borderRad = 4
 
@@ -1115,14 +1231,17 @@ class KillSwitch:
 
         if self.isPressed:
             self.downClick.play()
-            pygame.time.wait(100)  # Give enough time for sound to play before upClick.
+            pygame.time.wait(
+                100
+            )  # Give enough time for sound to play before upClick.
 
             for radio in self.radios:
-                if radio.active: radio.press()
+                if radio.active:
+                    radio.press()
         else:
             self.upClick.play()
 
-    def draw( self, surface):
+    def draw(self, surface):
         """
         Draw the killswitch on a surface (smaller if it's pressed).
 
@@ -1132,9 +1251,14 @@ class KillSwitch:
             Surface to draw the killswitch onto.
         """
         if not self.isPressed:
-            pygame.draw.rect(surface, self.color, self.button, 0, self.borderRad)
+            pygame.draw.rect(
+                surface, self.color, self.button, 0, self.borderRad
+            )
         else:
-            pygame.draw.rect(surface, self.color, self.pressedButton, 0, self.borderRad-1)
+            pygame.draw.rect(
+                surface, self.color, self.pressedButton, 0, self.borderRad - 1
+            )
+
 
 class RatioDisp:
     """
@@ -1159,7 +1283,7 @@ class RatioDisp:
         Surface with a colon for the ratios rendered onto it.
     horizontalBuf : int
         Horizontal buffer space for laying out slider graphics visually.
-    
+
     Methods
     -------
     draw
@@ -1185,8 +1309,12 @@ class RatioDisp:
         # Render digital display box and colon
         digitalOff = console.digitalOff
         digitalBG = console.digitalBG
-        self.digitalSlot = self.digitalFont.render(f'8', False, digitalOff, digitalBG)
-        self.ratioColon = console.labelsFont.render(':', False, console.labelsCol)
+        self.digitalSlot = self.digitalFont.render(
+            f"8", False, digitalOff, digitalBG
+        )
+        self.ratioColon = console.labelsFont.render(
+            ":", False, console.labelsCol
+        )
         self.horizontalBuf = 4
 
     def draw(self, surface):
@@ -1205,18 +1333,31 @@ class RatioDisp:
         colonWidth = self.ratioColon.get_width()
 
         # Step size from digital display box to the next: slot, buffer space, and colon.
-        offset = slotWidth + self.horizontalBuf + colonWidth + self.horizontalBuf
+        offset = (
+            slotWidth + self.horizontalBuf + colonWidth + self.horizontalBuf
+        )
         for i, overtone in enumerate(self.overtones):
             # Draw digital box
-            surface.blit(self.digitalSlot, (self.origin[0] + offset*i, self.origin[1]))
+            surface.blit(
+                self.digitalSlot, (self.origin[0] + offset * i, self.origin[1])
+            )
 
             # Draw overtone number in digital box if overtone is active.
             if overtone.active:
-                overtoneStr = f'{overtone.overtone}'.replace("1", " 1")
-                ratioDisp = self.digitalFont.render(overtoneStr, False, self.digitalOn)
-                surface.blit(ratioDisp, (self.origin[0] + offset*i, self.origin[1]))
+                overtoneStr = f"{overtone.overtone}".replace("1", " 1")
+                ratioDisp = self.digitalFont.render(
+                    overtoneStr, False, self.digitalOn
+                )
+                surface.blit(
+                    ratioDisp, (self.origin[0] + offset * i, self.origin[1])
+                )
 
             # Draw colon after digtial box (unless it's the last box).
             if overtone != self.overtones[-1]:
-                colonOffset = self.origin[0]+offset*i + slotWidth+self.horizontalBuf
+                colonOffset = (
+                    self.origin[0]
+                    + offset * i
+                    + slotWidth
+                    + self.horizontalBuf
+                )
                 surface.blit(self.ratioColon, (colonOffset, self.origin[1]))
