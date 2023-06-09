@@ -1,5 +1,5 @@
 # CONSTANTS
-START_HZ = 0.5
+START_HZ = 1
 
 BLACK = (0, 0, 0)
 

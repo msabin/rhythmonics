@@ -28,7 +28,7 @@ window = pygame.display.set_mode(windowSize)
 
 # Instantiate rythmonics' console interface and create variables for the 
 # components of the console that will be used in the event loop.
-Hz = 1
+Hz = config.START_HZ
 consoleSize = (1000, 560)
 consoleCenter = pygame.Vector2(consoleSize[0] / 2, consoleSize[1] / 2)
 consoleOrigin = windowCenter - consoleCenter
