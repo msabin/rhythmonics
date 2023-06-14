@@ -1,15 +1,19 @@
 # rhythmonics
+
+<img src="/screencaps/rhythmonics-bpm.gif" width="640">
+
 'rhythmonics' is a portmanteau of rhythm and harmonics and, true to its name, is a music toy meant to show the relationship between polyrhythms and harmony.
 
 This project is an interactive GUI that visualizes polyrhythms and allows a sliding scale of speed to auditorily and visually show how harmony is just really fast polyrhthms!
 
 An understanding of overtones/harmonics and of polyrhythms is useful but not required.  This interactive toy is meant to make the concepts intuitive and palatable just by graphically playing with it!
 
-<img src="screencaps/rhythmonics-blur" width="480">
-<img src="screencaps/rhythmonics-quartet" width="480">
-<img src="screencaps/rhythmonics-all" width="480">
-<img src="screencaps/rhythmonics-harmony" width="480">
-<img src="screencaps/rhythmonics-quartet.gif" width="480">
+<p>
+<img src="/screencaps/rhythmonics-blur.png" width="480">
+<img src="/screencaps/rhythmonics-quartet.png" width="480">
+<img src="/screencaps/rhythmonics-all.png" width="480">
+<img src="/screencaps/rhythmonics-harmony.png" width="480">
+</p>
 
 ## Warning
 This application has fast and strobing movement and may trigger epilepsy for those with photo-sensitive epilepsy.  Future versions will have an option to minimize movement but this is not available now.
@@ -40,14 +44,18 @@ The main event loop that powers rhythmonics should be ready to run now:
 There are four files of Python code that organize the code's components as follows:
 
 **main.py**
+
 Run the main event loop for the rhythmonics program.
 
 **harmonics.py**
+
 Module for simulating all harmonic components: sound, polygons, balls.
 
 **interface.py**
+
 Module for the GUI of rhythmonics, wrapped in a console aesthetic.
 
 **config.py**
+
 Global constants (mostly colors) for the program to use.
 
