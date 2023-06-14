@@ -9,10 +9,10 @@ This project is an interactive GUI that visualizes polyrhythms and allows a slid
 An understanding of overtones/harmonics and of polyrhythms is useful but not required.  This interactive toy is meant to make the concepts intuitive and palatable just by graphically playing with it!
 
 <p>
-<img src="/screencaps/rhythmonics-blur.png" width="480">
-<img src="/screencaps/rhythmonics-quartet.png" width="480">
-<img src="/screencaps/rhythmonics-all.png" width="480">
-<img src="/screencaps/rhythmonics-harmony.png" width="480">
+<img src="/screencaps/rhythmonics-blur.png" width="350">
+<img src="/screencaps/rhythmonics-quartet.png" width="350">
+<img src="/screencaps/rhythmonics-all.png" width="350">
+<img src="/screencaps/rhythmonics-harmony.png" width="350">
 </p>
 
 ## Warning
@@ -45,17 +45,17 @@ There are four files of Python code that organize the code's components as follo
 
 **main.py**
 
-Run the main event loop for the rhythmonics program.
+> Run the main event loop for the rhythmonics program.
 
 **harmonics.py**
 
-Module for simulating all harmonic components: sound, polygons, balls.
+> Module for simulating all harmonic components: sound, polygons, balls.
 
 **interface.py**
 
-Module for the GUI of rhythmonics, wrapped in a console aesthetic.
+> Module for the GUI of rhythmonics, wrapped in a console aesthetic.
 
 **config.py**
 
-Global constants (mostly colors) for the program to use.
+> Global constants (mostly colors) for the program to use.
 
