@@ -5,6 +5,12 @@ This project is an interactive GUI that visualizes polyrhythms and allows a slid
 
 An understanding of overtones/harmonics and of polyrhythms is useful but not required.  This interactive toy is meant to make the concepts intuitive and palatable just by graphically playing with it!
 
+<img src="screencaps/rhythmonics-blur" width="480">
+<img src="screencaps/rhythmonics-quartet" width="480">
+<img src="screencaps/rhythmonics-all" width="480">
+<img src="screencaps/rhythmonics-harmony" width="480">
+<img src="screencaps/rhythmonics-quartet.gif" width="480">
+
 ## Warning
 This application has fast and strobing movement and may trigger epilepsy for those with photo-sensitive epilepsy.  Future versions will have an option to minimize movement but this is not available now.
 
