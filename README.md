@@ -4,6 +4,8 @@
 
 'rhythmonics' is a portmanteau of rhythm and harmonics and, true to its name, is a music toy meant to show the relationship between polyrhythms and harmony.
 
+**See a video demo of the app [here](https://youtu.be/-yIUVG8UOb8)!!**
+
 This project is an interactive GUI that visualizes polyrhythms and allows a sliding scale of speed to auditorily and visually show how harmony is just really fast polyrhthms!
 
 An understanding of overtones/harmonics and of polyrhythms is useful but not required.  This interactive toy is meant to make the concepts intuitive and palatable just by graphically playing with it!
