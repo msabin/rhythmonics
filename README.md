@@ -1,4 +1,4 @@
-# rhythmonics
+# rhythmonics - ([demo](https://youtu.be/-yIUVG8UOb8))
 
 <img src="/screencaps/rhythmonics-bpm.gif" width="640">
 
