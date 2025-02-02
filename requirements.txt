@@ -1,2 +1,3 @@
-numpy==2.2.2
+numpy==2.2.2; python_version >= "3.10"
+numpy==1.26.4; python_version == "3.9"
 pygame==2.6.1
